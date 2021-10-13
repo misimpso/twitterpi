@@ -102,7 +102,7 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         """ TODO: docstring
         """
 
-        return "&".join([method.upper(), quote(url), quote(parameter_string)])
+        return "&".join([method.upper(), quote(url, safe=""), quote(parameter_string, safe="")])
     
     def __generate_nonce(self) -> str:
         """ Generate a 32 character, strictly alpha-numeric string.
