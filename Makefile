@@ -6,6 +6,7 @@ PHONY: init
 init:
 	@echo "Creating virtual environment 'venv' for development."
 	python3 -m venv venv
+	$(VENVPYTHON) -m pip install --upgrade setuptools pip
 	@echo "\nYou may want to activate the virtual environmnent with 'source venv/bin/activate'\n"
 
 PHONY: develop
