@@ -1,7 +1,7 @@
 import aiohttp
 import unittest
 
-from twitter_pi.oauth1_client import OAuth1ClientSession
+from twitterpi.oauth1_client import OAuth1ClientSession
 from unittest.mock import Mock, patch
 
 

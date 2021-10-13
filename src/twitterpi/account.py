@@ -1,6 +1,6 @@
 import asyncio
 
-from actions import Actions
+from twitterpi.actions import Actions
 
 
 class Account(Actions):

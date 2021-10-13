@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import toml
 
-from account import Account
+from twitterpi.account import Account
 from pathlib import Path
 
 CREDS_PATH = Path(__file__).parent / "conf" / "credentials.toml"

@@ -1,6 +1,6 @@
 import aiohttp
 
-from oauth1_client import OAuth1ClientSession
+from twitterpi.oauth1_client import OAuth1ClientSession
 
 
 BASE_URL = "https://api.twitter.com/1.1/"
