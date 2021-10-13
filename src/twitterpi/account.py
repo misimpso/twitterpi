@@ -14,6 +14,8 @@ class Account(Actions):
         )
     
     async def start(self):
+        """ TODO: docstring
+        """
         while True:
             # Search
             await self.search()
