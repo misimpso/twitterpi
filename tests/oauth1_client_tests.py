@@ -4,7 +4,8 @@ import unittest
 from twitterpi.oauth1_client import OAuth1ClientSession
 from unittest.mock import Mock, patch
 
-
+# Key values from Twitter example
+# https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
 KEY_RING = {
     "consumer_key": "xvz1evFS4wEEPTGEFPHBog",
     "consumer_secret": "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw",
@@ -15,6 +16,8 @@ KEY_RING = {
 class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
     @patch.object(aiohttp, "ClientSession", Mock(spec=aiohttp.ClientSession))
     async def test___create_signature_base_string__verify_return_value(self):
+        """ Verify return value of `__create_signature_base_string`.
+        """
         method = "post"
         url = "https://api.twitter.com/1.1/statuses/update.json"
         parameter_string = (
