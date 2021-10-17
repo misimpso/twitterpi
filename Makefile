@@ -42,5 +42,5 @@ PHONY: test
 test:
 	rm -f .coverage
 	rm -rf tests/htmlcov
-	find tests -name "*_tests.py" | xargs -n1 -t $(VENVPYTHON) -m coverage run -a
+	find . -name "*_tests.py" | xargs -n1 -t $(VENVPYTHON) -m coverage run -a
 	$(VENVPYTHON) -m coverage html
