@@ -1,6 +1,8 @@
 import asyncio
 
+from heapq import heapify, heappop
 from twitterpi.actions import Actions
+from twitterpi.dto import Tweet
 
 
 class Account(Actions):
@@ -16,11 +18,28 @@ class Account(Actions):
     async def start(self):
         """ TODO: docstring
         """
+
+        search_terms = ['"RT to win"', "csgogiveaway"]
+
+        last_latest_tweet_id = None
+        tweet_queue: list[Tweet] = []
+
         while True:
-            # Search
-            await self.search()
+
+            # Search for new tweets and add them to the queue
+            if len(tweet_queue) == 0:
+                for search_term in search_terms:
+                    new_tweets: list[Tweet] = await self.search(search_term, last_latest_tweet_id)
+                    tweet_queue += new_tweets
+                heapify(tweet_queue)
+                last_latest_tweet_id = tweet_queue[-1].created_at
+            
             # Parse
+            tweet: Tweet = heappop(tweet_queue)
+            print(tweet)
+
             # Interact
+
             # Sleep
             await asyncio.sleep(10)
         
