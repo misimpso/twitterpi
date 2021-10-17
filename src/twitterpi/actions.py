@@ -1,6 +1,6 @@
-import aiohttp
-
 from twitterpi.oauth1_client import OAuth1ClientSession
+from twitterpi.dto import Tweet, User
+from typing import Optional
 
 
 BASE_URL = "https://api.twitter.com/1.1/"
@@ -11,8 +11,6 @@ URLS = {
     "search_posts": f"{BASE_URL}search/tweets.json",
     "tweet": f"{BASE_URL}statuses/update.json",
 }
-
-# OAuth 1.0: https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
 
 
 class Actions:
@@ -47,28 +45,39 @@ class Actions:
     #             response.raise_for_status()
     #             response_json = await response.json()
     #             self.bearer_token = response_json["access_token"]
-                
-    # @_check_bearer
-    async def search(self):
+
+    async def search(self, search_term: str, last_latest_tweet_id: Optional[int]) -> list[Tweet]:
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/api-reference/get-search-tweets
         """
+
         params = {
-            "q": "RT giveaway like share -filter:retweets",
-            "result_type": "recent",
-            "tweet_mode": "extended",
-            "format": "compact",
+            "count": 50,
+            "include_entities": True,
+            "q": search_term,
+            "result_type": "mixed",
         }
+
+        if last_latest_tweet_id is not None:
+            params["since_id"] = last_latest_tweet_id
+
+        tweets = []
         async with OAuth1ClientSession(**self.key_ring) as session:
-            print(session.headers)
             async with session.get(URLS["search_posts"], params=params) as response:
-                print(response)
-                print(await response.json())
-
-    
-    # @_check_bearer
-    # async def check_rate_limit(self):
-    #     async with aiohttp.ClientSession()
-        
-
-
+                response.raise_for_status()
+                response_json = await response.json()
+                for tweet in response_json["statuses"]:
+                    author = User(id=tweet["user"]["id"], name=tweet["user"]["name"])
+                    mentions = [
+                        User(id=u["id"], name=u["name"])
+                        for u in tweet["entities"]["user_mentions"]
+                    ]
+                    tweets.append(
+                        Tweet(
+                            id=tweet["id"],
+                            created_at=tweet["created_at"],
+                            text=tweet["text"],
+                            author=author,
+                            mentions=mentions,
+                        ))
+        return tweets
