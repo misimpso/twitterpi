@@ -9,7 +9,6 @@ URLS = {
     "follow": f"{BASE_URL}friendships/create.json",
     "retweet": f"{BASE_URL}statuses/retweet/:{{}}.json",
     "search_posts": f"{BASE_URL}search/tweets.json",
-    "token": "https://api.twitter.com/oauth2/token",
     "tweet": f"{BASE_URL}statuses/update.json",
 }
 
