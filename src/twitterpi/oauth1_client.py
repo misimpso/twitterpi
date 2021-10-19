@@ -33,6 +33,7 @@ def prcnt_encd(s: str) -> str:
     Dogs%2C%20Cats%20%26%20Mice
     %E2%98%83
     """
+
     return quote(s, safe="")
 
 
@@ -54,6 +55,15 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         url = str(kwargs.get("str_or_url", args[1]))
         params = kwargs.get("params", None)
 
+        if params:
+            for key in params:
+                value = params[key]
+                if isinstance(value, bool):
+                    value = str(value).lower()
+                elif isinstance(value, (int, float)):
+                    value = str(value)
+                params[key] = value
+
         auth_header = {
             "Authorization": self.__generate_auth_header(method, url, params),
             "User-Agent": "OAuth gem v0.4.4",
@@ -72,16 +82,15 @@ class OAuth1ClientSession(aiohttp.ClientSession):
             "oauth_consumer_key": self.consumer_key,
             "oauth_nonce": self.__generate_nonce(),
             "oauth_signature_method": "HMAC-SHA1",
-            "oauth_timestamp": int(time()),
+            "oauth_timestamp": str(int(time())),
             "oauth_token": self.access_token,
-            "oauth_version": 1.0,
+            "oauth_version": "1.0",
         }
         oauth_params["oauth_signature"] = self.__generate_signature(method, url, oauth_params, request_params)
 
         auth_header = []
         for key in sorted(oauth_params):
-            value = oauth_params[key]
-            key, value = map(str, [key, value])
+            key, value = map(str, [key, oauth_params[key]])
             key, value = map(prcnt_encd, [key, value])
             auth_header.append(f'{key}="{value}"')
 
@@ -109,14 +118,7 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         
         parameter_string = []
         for key in sorted(params):
-            key = prcnt_encd(key)
-            value = params[key]
-            if isinstance(value, bool):
-                value = str(value).lower()
-            elif isinstance(value, (int, float)):
-                value = str(value)
-            elif isinstance(value, str):
-                value = prcnt_encd(value)
+            key, value = map(prcnt_encd, [key, params[key]])
             parameter_string.append(f'{key}={value}')
         
         return "&".join(parameter_string)
