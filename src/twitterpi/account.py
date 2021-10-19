@@ -1,8 +1,10 @@
 import asyncio
+import random
 
 from heapq import heapify, heappop
 from twitterpi.actions import Actions
-from twitterpi.dto import Tweet
+from twitterpi.dto.directive import Directive
+from twitterpi.dto.tweet import Tweet
 
 
 class Account(Actions):
@@ -19,9 +21,10 @@ class Account(Actions):
         """ TODO: docstring
         """
 
-        search_terms = ['"RT to win"', "csgogiveaway"]
+        search_terms = ['#win OR #giveaway', 'csgogiveaway']
 
         last_latest_tweet_id = None
+        tweet_ids: set[int] = set()
         tweet_queue: list[Tweet] = []
 
         while True:
@@ -30,96 +33,77 @@ class Account(Actions):
             if len(tweet_queue) == 0:
                 for search_term in search_terms:
                     new_tweets: list[Tweet] = await self.search(search_term, last_latest_tweet_id)
-                    tweet_queue += new_tweets
+                    for new_tweet in new_tweets:
+                        if new_tweet.id not in tweet_ids:
+                            tweet_queue.append(new_tweet)
+                            tweet_ids.append(new_tweet.id)
                 heapify(tweet_queue)
                 last_latest_tweet_id = tweet_queue[-1].created_at
             
-            # Parse
+            # Get tweet
             tweet: Tweet = heappop(tweet_queue)
-            print(tweet)
+            tweet_ids.remove(tweet.id)
 
-            # Interact
+            # Parse / Interact
+            directive: Directive = self.parse(tweet.text)
+            await self.interact(directive, tweet)
 
             # Sleep
             await asyncio.sleep(10)
+    
+    def parse(self, tweet_text: str) -> Directive:
+        """ TODO: docstring
+        """
+
+        directive = Directive()
+        tweet_text = tweet_text.lower()
+
+        for keyword in ("rt", "retweet", "re-tweet"):
+            if keyword in tweet_text:
+                directive.retweet = True
+                break
         
+        for keyword in ("favorite", "fav", "like"):
+            if keyword in tweet_text:
+                directive.favorite = True
+                break
+        
+        directive.follow = ("follow" in tweet_text)
+        directive.tag = ("tag" in tweet_text)
+        directive.comment = ("comment" in tweet_text)
 
+        return directive
+    
+    async def interact(self, directive: Directive, tweet: Tweet):
+        """ TODO: docstring
+        """
 
+        actions = []
+        if directive.retweet:
+            actions.append(("retweet", {"tweet_id": tweet.id}))
 
+        if directive.favorite:
+            actions.append(("favorite", {"tweet_id": tweet.id}))
 
+        if directive.follow:
+            actions.append(("follow", {"user_id": tweet.author.id}))
+            for user in tweet.mentions:
+                actions.append(("follow", {"user_id": user.id}))
 
+        if directive.tag:
+            actions.append(("tag", {"tweet_id": tweet.id}))
+        elif directive.comment:
+            actions.append(("comment", {"tweet_id": tweet.id}))
 
+        random.shuffle(actions)
+        sleep_amounts = [5.2, 6.7, 9.8, 10.4, 12.3, 15.7]
+        plus_minus = 1 + random.random()
 
+        for i, action in enumerate(actions):
+            sleep_amount = random.choice(sleep_amounts)
+            sleep_amount += plus_minus * [-1, 1][i % 2 == 0]
+            await asyncio.sleep(sleep_amount)
 
+            endpoint, kwargs = action
 
-    # def search(self):
-    #     filter_map = {
-    #         "statuses": [{
-    #             "full_text": True,
-    #             "id": True,
-    #             "entities": {
-    #                 "user_mentions": [{
-    #                     "screen_name": True
-    #                 }]},
-    #             "retweeted_status": {
-    #                 "id": True,
-    #                 "user": {
-    #                     "screen_name": True
-    #                 }
-    #             },
-    #             "user": {
-    #                 "screen_name": True
-    #             }
-    #         }], "errors": True
-    #     }
-    #     # filter_map = None
-    #     response = oauth_request.get(
-    #         url=self.urls["search_posts"],
-    #         params={
-    #             "q": self.search_string,
-    #             "result_type": "mixed",
-    #             "tweet_mode": "extended",
-    #             "count": 1,
-    #             "format": "compact"
-    #         },
-    #         key_ring=self.key_ring,
-    #         filter_map=filter_map
-    #     )
-    #     return response
-
-    # def follow(self, screen_name):
-    #     response = oauth_request.post(
-    #         url=self.urls["follow"],
-    #         params={
-    #             "screen_name": screen_name,
-    #             "follow": "true"},
-    #         key_ring=self.key_ring,
-    #         filter_map={"errors": True}
-    #     )
-    #     return response
-
-    # def retweet(self, tweet_id):
-    #     response = oauth_request.post(
-    #         url=self.urls["retweet"].format(tweet_id),
-    #         key_ring=self.key_ring,
-    #         filter_map={"errors": True}
-    #     )
-    #     return response
-
-    # def favorite(self, tweet_id):
-    #     response = oauth_request.post(
-    #         url=self.urls["follow"],
-    #         params={"id": tweet_id},
-    #         key_ring=self.key_ring,
-    #         filter_map={"errors": True}
-    #     )
-    #     return response
-
-    # def tweet(self, message):
-    #     response = oauth_request.post(
-    #         url=self.urls["tweet"],
-    #         params={"status": message},
-    #         key_ring=self.key_ring,
-    #         filter_map={"errors": True}
-    #     )
-    #     print(response)
+            await getattr(self, endpoint)(**kwargs)
