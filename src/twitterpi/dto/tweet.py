@@ -2,7 +2,7 @@ from dataclasses import field
 from datetime import datetime
 from pydantic import validator
 from pydantic.dataclasses import dataclass
-from twitterpi.dto import User
+from twitterpi.dto.user import User
 
 @dataclass(order=True)
 class Tweet:
