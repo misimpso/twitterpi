@@ -36,7 +36,7 @@ class Account(Actions):
                     for new_tweet in new_tweets:
                         if new_tweet.id not in tweet_ids:
                             tweet_queue.append(new_tweet)
-                            tweet_ids.append(new_tweet.id)
+                            tweet_ids.add(new_tweet.id)
                 heapify(tweet_queue)
                 last_latest_tweet_id = tweet_queue[-1].created_at
             
@@ -49,6 +49,7 @@ class Account(Actions):
             await self.interact(directive, tweet)
 
             # Sleep
+            print("Sleeping for [10] seconds.")
             await asyncio.sleep(10)
     
     def parse(self, tweet_text: str) -> Directive:
@@ -78,6 +79,7 @@ class Account(Actions):
         """ TODO: docstring
         """
 
+        print(f"Interacting with tweet ... [{tweet.id}, {directive}]")
         actions = []
         if directive.retweet:
             actions.append(("retweet", {"tweet_id": tweet.id}))
@@ -102,8 +104,11 @@ class Account(Actions):
         for i, action in enumerate(actions):
             sleep_amount = random.choice(sleep_amounts)
             sleep_amount += plus_minus * [-1, 1][i % 2 == 0]
+            print(f"Sleeping for [{sleep_amount}] seconds ...")
             await asyncio.sleep(sleep_amount)
 
             endpoint, kwargs = action
 
             await getattr(self, endpoint)(**kwargs)
+        
+        print("Tweet interacted!")
