@@ -4,18 +4,21 @@ from pydantic import validator
 from pydantic.dataclasses import dataclass
 from twitterpi.dto.user import User
 
-@dataclass(order=True)
-class Tweet:
-    id: int = field(compare=False)
-    created_at: datetime
-    text: str = field(compare=False)
+_twitter_datetime_format = "%a %b %d %H:%M:%S +0000 %Y"
 
-    author: User = field(compare=False)
-    mentions: list[User] = field(compare=False)
+
+@dataclass
+class Tweet:
+    id: int
+    created_at: datetime
+    text: str
+
+    author: User
+    mentions: list[User] = field(default_factory=list)
 
     @validator('created_at', pre=True)
-    def parse_datetime(cls, v):
+    def parse_datetime(cls, v: str) -> datetime:
         """ TODO: docstring
         """
 
-        return datetime.strptime(v, "%a %b %d %H:%M:%S +0000 %Y")
+        return datetime.strptime(v, _twitter_datetime_format)
