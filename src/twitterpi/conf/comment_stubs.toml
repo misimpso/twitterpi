@@ -1,0 +1,16 @@
+comments = """
+I want one!
+I want to win!
+This is so cool!
+Sign me up!
+Good luck everyone.
+Count me in.
+"""
+
+tagged_comments = """
+{} this was what I was talking about.
+{}
+{} sign us up!
+{} count us in.
+{} this is so cool!
+"""

@@ -1,10 +1,24 @@
 import asyncio
 import toml
+import typing as ty
 
-from twitterpi.account import Account
 from pathlib import Path
+from twitterpi.account import Account
+from twitterpi.api import Api
+from twitterpi.cache import Cache
 
 CREDS_PATH = Path(__file__).parent / "conf" / "credentials.toml"
+COMMENT_STUBS_PATH = Path(__file__).parent / "conf" / "comment_stubs.toml"
+
+
+def read_toml(file_path: Path) -> dict[str, ty.Any]:
+    """ TODO: doccstring
+    """
+
+    contents: dict[str, ty.Any] = {}
+    with file_path.open("r") as f:
+        contents = toml.load(f)
+    return contents
 
 
 class TwitterBot:
@@ -12,9 +26,22 @@ class TwitterBot:
         """ TODO: docstring
         """
 
-        creds_dict = self.__read_creds_file(creds_path)
-        accounts = self.__initialize_accounts(creds_dict)
+        account_creds: dict[str, ty.Any] = read_toml(creds_path)
+        accounts: list[Account] = []
+        for account_name in account_creds:
+            creds = account_creds[account_name]
+            api = Api(**creds)
+            cache = Cache(account_name)
+            accounts.append(Account(screen_name=account_name, api=api, cache=cache))
         return accounts
+    
+    def load_comments(self, comment_stubs_path: Path):
+        """ TODO: docstring
+        """
+
+        comment_stubs: dict[str, ty.Any] = read_toml(comment_stubs_path)
+        Account.normal_comments = comment_stubs["comments"].split("\n")
+        Account.tagged_comments = comment_stubs["tagged_comments"].split("\n")
     
     def run(self, accounts: list[Account]):
         """ TODO: docstring
@@ -23,41 +50,10 @@ class TwitterBot:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(asyncio.gather(*[account.start() for account in accounts]))
 
-    def __read_creds_file(self, creds_path: Path) -> dict[str, str]:
-        """ TODO: docstring
-        """
-
-        print(f"Loading account credentials ... [Path: {creds_path}]")
-        if not creds_path.is_file():
-            raise FileNotFoundError(f"Cannot load account credentials. [{creds_path}]")
-
-        account_creds = {}
-        with creds_path.open("r") as f:
-            account_creds = toml.load(f)
-
-        print("Account credentials loaded!")
-        return account_creds
-    
-    def __initialize_accounts(self, accounts_dict: dict) -> list[Account]:
-        """ TODO: docstring
-        """
-        print("Initializing accounts ...")
-        accounts = []
-        for name, creds in accounts_dict.items():
-            accounts.append(
-                Account(
-                    name=name,
-                    consumer_key=creds["consumer_key"],
-                    consumer_secret=creds["consumer_secret"],
-                    access_token=creds["access_token"],
-                    access_token_secret=creds["access_token_secret"],
-                ))
-        print(f"Accounts initialized! {[a.name for a in accounts]}")
-        return accounts
-
 
 def main():
     bot = TwitterBot()
+    bot.load_comments(COMMENT_STUBS_PATH)
     accounts = bot.load_accounts(CREDS_PATH)
     bot.run(accounts)
 
