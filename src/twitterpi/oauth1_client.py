@@ -1,16 +1,16 @@
 import aiohttp
 import random
 import string
+import urllib
 
 from binascii import b2a_base64
 from hashlib import sha1
 from hmac import HMAC
 from time import time
 from typing import Optional
-from urllib.parse import quote
 
 
-ALPHA_NUM = list(string.ascii_letters + string.digits)
+ALPHA_NUM: list[str] = list(string.ascii_letters + string.digits)
 
 def prcnt_encd(s: str) -> str:
     """ Percent encode given string `s`.
@@ -34,7 +34,7 @@ def prcnt_encd(s: str) -> str:
     %E2%98%83
     """
 
-    return quote(s, safe="")
+    return urllib.parse.quote(s, safe="")
 
 
 class OAuth1ClientSession(aiohttp.ClientSession):
@@ -45,32 +45,35 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         self.consumer_secret = kwargs.pop("consumer_secret")
         self.access_token = kwargs.pop("access_token")
         self.access_token_secret = kwargs.pop("access_token_secret")
+
         super().__init__(*args, **kwargs)
 
-    async def _request(self, *args: list, **kwargs: dict) -> aiohttp.ClientResponse:
+    async def _request(self, *args: tuple, **kwargs: dict) -> aiohttp.ClientResponse:
         """ TODO: docstring
         """
 
-        method = kwargs.get("method", args[0])
-        url = str(kwargs.get("str_or_url", args[1]))
-        params = kwargs.get("params", None)
+        method: str = kwargs.get("method", args[0])
+        url: str = str(kwargs.get("str_or_url", args[1]))
+        params: Optional[dict] = kwargs.get("params", None)
+        data: Optional[dict] = kwargs.get("data", None)
 
+        all_parameters = {}
         if params:
-            for key in params:
-                value = params[key]
-                if isinstance(value, bool):
-                    value = str(value).lower()
-                elif isinstance(value, (int, float)):
-                    value = str(value)
-                params[key] = value
+            all_parameters.update(params)
+        if data:
+            all_parameters.update(data)
 
         auth_header = {
-            "Authorization": self.__generate_auth_header(method, url, params),
+            "Authorization": self.__generate_auth_header(method, url, all_parameters),
             "User-Agent": "OAuth gem v0.4.4",
             "Content-Type": "application/x-www-form-urlencoded",
         }
         existing_headers = kwargs.pop("headers", {})
         existing_headers.update(auth_header)
+
+        # params = urllib.parse.urlencode(params)
+        # print(params)
+
         response = await super()._request(headers=existing_headers, *args, **kwargs)
         return response
     
@@ -89,8 +92,7 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         oauth_params["oauth_signature"] = self.__generate_signature(method, url, oauth_params, request_params)
 
         auth_header = []
-        for key in sorted(oauth_params):
-            key, value = map(str, [key, oauth_params[key]])
+        for key, value in sorted(oauth_params.items()):
             key, value = map(prcnt_encd, [key, value])
             auth_header.append(f'{key}="{value}"')
 
@@ -117,8 +119,8 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         params = {**oauth_params, **request_params}
         
         parameter_string = []
-        for key in sorted(params):
-            key, value = map(prcnt_encd, [key, params[key]])
+        for key, value in sorted(params.items()):
+            key, value = map(prcnt_encd, [key, value])
             parameter_string.append(f'{key}={value}')
         
         return "&".join(parameter_string)
