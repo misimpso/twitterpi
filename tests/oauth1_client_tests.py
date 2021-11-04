@@ -4,7 +4,7 @@ import unittest
 
 from hashlib import sha1
 from hmac import HMAC
-from twitterpi.oauth1_client import OAuth1ClientSession
+from twitterpi.oauth1_client import OAuth1ClientSession, prcnt_encd
 from unittest.mock import Mock, patch
 
 
@@ -20,7 +20,7 @@ KEY_RING = {
 }
 METHOD = "POST"
 URL = "https://api.twitter.com/1.1/statuses/update.json"
-REQUEST_PARAMS = {"include_entities": True, "status": "Hello Ladies + Gentlemen, a signed OAuth request!"}
+REQUEST_PARAMS = {"include_entities": "true", "status": "Hello Ladies + Gentlemen, a signed OAuth request!"}
 PARAMETER_STRING = (
     "include_entities=true&"
     "oauth_consumer_key=xvz1evFS4wEEPTGEFPHBog&"
@@ -54,6 +54,23 @@ AUTH_HEADER = (
     'oauth_token="370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb", '
     'oauth_version="1.0"'
 )
+
+class PercentEncodeTests(unittest.TestCase):
+
+     def test_prcnt_encd__verify_return_values(self):
+        """ TODO: docstring
+        """
+
+        input_output = [
+            ("Ladies + Gentlemen", "Ladies%20%2B%20Gentlemen"),
+            ("An encoded string!", "An%20encoded%20string%21"),
+            ("Dogs, Cats & Mice", "Dogs%2C%20Cats%20%26%20Mice"),
+            ("☃", "%E2%98%83"),
+            ("T3st-S0me_4es3rved~Character5.", "T3st-S0me_4es3rved~Character5."),
+        ]
+
+        for i, o in input_output:
+            self.assertEqual(o, prcnt_encd(i))
 
 
 class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
@@ -133,9 +150,9 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
             "oauth_consumer_key": KEY_RING["consumer_key"],
             "oauth_nonce": "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg",
             "oauth_signature_method": "HMAC-SHA1",
-            "oauth_timestamp": 1318622958,
+            "oauth_timestamp": "1318622958",
             "oauth_token": KEY_RING["access_token"],
-            "oauth_version": 1.0,
+            "oauth_version": "1.0",
         }
 
         async with OAuth1ClientSession(**KEY_RING) as session:
