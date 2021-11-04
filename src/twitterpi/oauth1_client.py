@@ -71,9 +71,6 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         existing_headers = kwargs.pop("headers", {})
         existing_headers.update(auth_header)
 
-        # params = urllib.parse.urlencode(params)
-        # print(params)
-
         response = await super()._request(headers=existing_headers, *args, **kwargs)
         return response
     
