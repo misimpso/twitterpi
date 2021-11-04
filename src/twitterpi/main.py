@@ -40,8 +40,10 @@ class TwitterBot:
         """
 
         comment_stubs: dict[str, ty.Any] = read_toml(comment_stubs_path)
-        Account.normal_comments = comment_stubs["comments"].split("\n")
-        Account.tagged_comments = comment_stubs["tagged_comments"].split("\n")
+        Account.normal_comments = comment_stubs["comments"].strip().split("\n")
+        Account.tagged_comments = comment_stubs["tagged_comments"].strip().split("\n")
+        print(f"Loaded [{len(Account.normal_comments)}] comment stubs.")
+        print(f"Loaded [{len(Account.tagged_comments)}] tagged comment stubs.")
     
     def run(self, accounts: list[Account]):
         """ TODO: docstring
