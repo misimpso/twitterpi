@@ -2,7 +2,7 @@ import asyncio
 import random
 
 from time import time
-from twitterpi.api import Api
+from twitterpi.api import Api, BASE_URL
 from twitterpi.cache import Cache
 from twitterpi.dto import Directive, Tweet, User
 from typing import Optional
@@ -38,16 +38,17 @@ class Account:
         """ TODO: docstring
         """
 
-        # search_terms = ['#win OR #giveaway', 'csgogiveaway']
-
-        # last_latest_tweet_id = None
-        # tweet_ids: set[int] = set()
-        # tweet_queue: list[Tweet] = []
-
         while True:
             tweet: Tweet = await self.get_tweet()
-            await self.interact(tweet)
-            await self.remove_seen_tweet(tweet)
+
+            if not await self.cache.check_tweet_seen(tweet):
+                await self.interact(tweet)
+            else:
+                print("Tweet already seen.")
+
+            await self.cache.remove_new_tweet(tweet)
+            await self.cache.insert_seen_tweet(tweet)
+
             await random_sleep()
     
     async def parse(self, tweet_text: str) -> Directive:
@@ -82,9 +83,13 @@ class Account:
         """
 
         actions: list[tuple] = []
+        priority_actions: list[tuple] = []
         directive: Directive = await self.parse(tweet.text)
 
-        print(f"Interacting with tweet ... [@{tweet.author.screen_name} {tweet.text[:20]}{' ...' if len(tweet.text) > 20 else ''} || {directive}]")
+        print(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")
+        print(f" | {directive}")
+        for line in tweet.text.split("\n"):
+            print(f" | {line}")
         
         if directive.retweet:
             actions.append((self.api.retweet, {"tweet_id": tweet.id}))
@@ -97,19 +102,24 @@ class Account:
             for mention in tweet.mentions:
                 actions.append((self.follow_user, {"user": mention}))
 
-        if directive.tag:           
-            actions.append((self.tagged_comment, {"tweet": tweet}))
+        if directive.tag or directive.comment:
+            if not await self.cache.check_replies_populated():
+                priority_actions.append((self.populate_replies, {}))
 
-        elif directive.comment:
-            normal_comment: str = random.choice(self.normal_comments)
-            normal_comment = f"@{tweet.author.screen_name} {normal_comment}"
-            actions.append((self.api.comment, {"tweet_id": tweet.id, "text": normal_comment}))
+            if directive.tag:
+                if not await self.cache.check_followers_populated():
+                    priority_actions.append((self.populate_followers, {}))
 
-        if not actions:
+            actions.append((self.comment, {"tweet": tweet, "tag": directive.tag}))
+
+        if not actions and not priority_actions:
             print("Nothing to act upon.")
             return
 
+        random.shuffle(priority_actions)
         random.shuffle(actions)
+
+        actions = priority_actions + actions
         
         for action in actions:
             endpoint, kwargs = action
@@ -127,40 +137,61 @@ class Account:
 
         if not tweet:
             # Get tweets from API and insert into database
-            search_terms = ['#win OR #giveaway', 'csgogiveaway']
+            search_terms = [
+                '#win OR #giveaway -filter:retweets -filter:replies',
+                '#csgogiveaway -filter:retweets -filter:replies'
+            ]
+
             for search_term in search_terms:
                 new_tweets: list[Tweet] = await self.api.get_tweets(search_term)
-                await self.cache.insert_tweets(tweets=new_tweets)
+                await self.cache.insert_new_tweets(tweets=new_tweets)
+                await random_sleep()
+
             tweet: Tweet = await self.cache.get_tweet()
         return tweet
     
-    async def tagged_comment(self, tweet: Tweet):
+    async def comment(self, tweet: Tweet, tag: bool = False):
         """ TODO: docstring
         """
 
-        random_amount: int = random.randint(1, 3)
-        rand_followers: list[User] = await self.cache.get_random_followers(n=random_amount)
+        if await self.cache.check_tweet_replied(tweet):
+            print("Tweet already replied to.")
+            return
 
-        if not rand_followers:
-            followers: list[User] = await self.api.get_followers(self.screen_name)
-            await self.cache.insert_followers(followers=followers)
-            rand_followers: list[User] = await self.cache.get_random_followers(n=random_amount)
-        
-        follower_string = " ".join([f".@{follower.screen_name}"for follower in rand_followers])
-        tagged_comment: str = random.choice(self.tagged_comments)
-        tagged_comment = tagged_comment.format(follower_string)
+        # Replies / Comments must start with mention of Tweet Author's screen name
+        comment_text: str = f"@{tweet.author.screen_name} "
 
-        await self.api.comment(tweet_id=tweet.id, text=tagged_comment)
+        if tag == True:
+            random_amount: int = random.randint(2, 3)
+            rand_followers: list[User] = await self.cache.get_random_followers(random_amount)
+            follower_string = " ".join([f"@{follower.screen_name}" for follower in rand_followers])
+
+            # Tagged comments have `{}` format placeholders for follower string
+            comment_text += random.choice(self.tagged_comments).format(follower_string)
+
+        else:
+            comment_text += random.choice(self.normal_comments)
+
+        await self.api.comment(tweet_id=tweet.id, text=comment_text)
+        await self.cache.insert_reply(tweet.id)
     
     async def follow_user(self, user: User):
         """ TODO: docstring
         """
 
         await self.api.follow_user(user_id=user.id)
-        await self.cache.insert_followers([user])
+        await self.cache.insert_follower(user)
     
-    async def remove_seen_tweet(self, tweet: Tweet):
+    async def populate_followers(self):
         """ TODO: docstring
         """
 
-        await self.cache.remove_tweet(tweet)
+        followers: list[User] = await self.api.get_user_followers(self.screen_name)
+        await self.cache.insert_followers(followers)
+    
+    async def populate_replies(self):
+        """ TODO: docstring
+        """
+
+        tweets: list[int] = await self.api.get_user_replies(self.screen_name)
+        await self.cache.insert_replies(tweets)
