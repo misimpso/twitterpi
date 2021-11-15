@@ -1,25 +1,15 @@
 import asyncio
+import logging
 import random
 
 from time import time
-from twitterpi.api import Api, BASE_URL
+from twitterpi.api import Api
 from twitterpi.cache import Cache
 from twitterpi.dto import Directive, Tweet, User
 from typing import Optional
 
 
 SLEEP_AMOUNTS = list(range(15, 30, 2))
-
-
-async def random_sleep():
-    """ TODO: docstring
-    """
-    plus_minus = 1 + random.random()
-    if int(time()) % 2 == 0:
-        plus_minus *= -1
-    sleep_amount = random.choice(SLEEP_AMOUNTS) + plus_minus
-    print(f"zZz Sleeping for [{sleep_amount:.2f}] seconds zZz")
-    await asyncio.sleep(sleep_amount)
 
 
 class Account:
@@ -30,6 +20,7 @@ class Account:
         """ TODO: docstring
         """
 
+        self.logger = logging.getLogger(screen_name)
         self.screen_name: str = screen_name
         self.api = api
         self.cache = cache
@@ -44,12 +35,12 @@ class Account:
             if not await self.cache.check_tweet_seen(tweet):
                 await self.interact(tweet)
             else:
-                print("Tweet already seen.")
+                self.logger.info("Tweet already seen.")
 
             await self.cache.remove_new_tweet(tweet)
             await self.cache.insert_seen_tweet(tweet)
 
-            await random_sleep()
+            await self.random_sleep()
     
     async def parse(self, tweet_text: str) -> Directive:
         """ TODO: docstring
@@ -90,10 +81,10 @@ class Account:
         priority_actions: list[tuple] = []
         directive: Directive = await self.parse(tweet.text)
 
-        print(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")
-        print(f" | {directive}")
+        self.logger.info(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")        
         for line in tweet.text.split("\n"):
-            print(f" | {line}")
+            self.logger.info(f" │ {line}")
+        self.logger.info(f" └─────── {directive}")
         
         if directive.retweet:
             actions.append((self.api.retweet, {"tweet_id": tweet.id}))
@@ -117,11 +108,11 @@ class Account:
             actions.append((self.comment, {"tweet": tweet, "tag": directive.tag}))
 
         if not actions and not priority_actions:
-            print("Nothing to act upon.")
+            self.logger.info("Nothing to act upon.")
             return
         
         if directive.retweet and not (directive.favorite or directive.follow or directive.tag or directive.comment):
-            print("Not enough directives to act upon.")
+            self.logger.info("Not enough directives to act upon.")
             return
 
         random.shuffle(priority_actions)
@@ -129,12 +120,12 @@ class Account:
 
         actions = priority_actions + actions
         
-        for action in actions:
-            endpoint, kwargs = action
-            await endpoint(**kwargs)
-            await random_sleep()
+        # for action in actions:
+        #     endpoint, kwargs = action
+        #     await endpoint(**kwargs)
+        #     await self.random_sleep()
         
-        print("Tweet interacted!")
+        self.logger.info("Tweet interacted!")
 
     async def get_tweet(self) -> Optional[Tweet]:
         """ TODO: docstring
@@ -153,7 +144,7 @@ class Account:
             for search_term in search_terms:
                 new_tweets: list[Tweet] = await self.api.get_tweets(search_term)
                 await self.cache.insert_new_tweets(tweets=new_tweets)
-                await random_sleep()
+                await self.random_sleep()
 
             tweet: Tweet = await self.cache.get_tweet()
         return tweet
@@ -163,7 +154,7 @@ class Account:
         """
 
         if await self.cache.check_tweet_replied(tweet):
-            print("Tweet already replied to.")
+            self.logger.info("Tweet already replied to.")
             return
 
         # Replies / Comments must start with mention of Tweet Author's screen name
@@ -203,3 +194,13 @@ class Account:
 
         tweets: list[int] = await self.api.get_user_replies(self.screen_name)
         await self.cache.insert_replies(tweets)
+    
+    async def random_sleep(self):
+        """ TODO: docstring
+        """
+        plus_minus = 1 + random.random()
+        if int(time()) % 2 == 0:
+            plus_minus *= -1
+        sleep_amount = random.choice(SLEEP_AMOUNTS) + plus_minus
+        self.logger.info(f"zZz Sleeping for [{sleep_amount:.2f}] seconds zZz")
+        await asyncio.sleep(sleep_amount)

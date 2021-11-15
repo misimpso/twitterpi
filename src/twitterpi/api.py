@@ -1,10 +1,11 @@
 import asyncio
+import logging
 
+from pprint import pprint
 from pyrate_limiter import Duration, Limiter, RequestRate
 from twitterpi.dto import Tweet, User
 from twitterpi.oauth1_client import OAuth1ClientSession
 from typing import Optional
-from pprint import pprint
 
 """
 TODO:
@@ -43,6 +44,7 @@ class Api:
         """ TODO: docstring
         """
 
+        self.logger = logging.getLogger(__name__)
         self.key_ring = {
             "consumer_key": consumer_key,
             "consumer_secret": consumer_secret,
@@ -55,7 +57,7 @@ class Api:
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/api-reference/get-search-tweets
         """
-        print(f"Searching tweets [Search Term: {search_term}] ...")
+        self.logger.info(f"Searching tweets [Search Term: {search_term}] ...")
 
         params = {
             "count": "50",
@@ -96,7 +98,7 @@ class Api:
                             mentions=mentions,
                         ))
 
-        print(f"Received [{len(tweets)}] Tweets!")
+        self.logger.info(f"Received [{len(tweets)}] Tweets!")
         return tweets
     
     @FAVORITE_TWEET_LIMITER.ratelimit("favorite_tweet", delay=True)
@@ -109,7 +111,7 @@ class Api:
             "id": str(tweet_id)
         }
 
-        print(f"Favoriting tweet [TweetId: {tweet_id}] ...")
+        self.logger.info(f"Favoriting tweet [TweetId: {tweet_id}] ...")
         async with OAuth1ClientSession(**self.key_ring) as session:
             async with session.post(URLS["favorite_tweet"], params=params) as response:
                 if response.status == 403:
@@ -117,11 +119,11 @@ class Api:
                     for error in response_json.get("errors", []):
                         message = error.get("message", None)
                         if message == "You have already favorited this status.":
-                            print(message)
+                            self.logger.info(message)
                             return
-                    print(response_json)
+                    self.logger.info(response_json)
                 response.raise_for_status()
-        print("Tweet favorited!")
+        self.logger.info("Tweet favorited!")
     
     @FOLLOW_TWEET_LIMITER.ratelimit("follow_user", delay=True)
     async def follow_user(self, user_id: int):
@@ -133,14 +135,14 @@ class Api:
             "user_id": str(user_id)
         }
 
-        print(f"Following user [UserId: {user_id}] ...")
+        self.logger.info(f"Following user [UserId: {user_id}] ...")
         async with OAuth1ClientSession(**self.key_ring) as session:
             async with session.post(URLS["follow_user"], params=params) as response:
                 if response.status == 403:
                     json = await response.json()
-                    print(json)
+                    self.logger.info(json)
                 response.raise_for_status()
-        print("User followed!")
+        self.logger.info("User followed!")
 
     @STATUS_LIMITER.ratelimit("retweet", delay=True)
     async def retweet(self, tweet_id: int):
@@ -148,7 +150,7 @@ class Api:
         https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-retweet-id
         """
 
-        print(f"Retweeting [TweetId: {tweet_id}] ...")
+        self.logger.info(f"Retweeting [TweetId: {tweet_id}] ...")
         async with OAuth1ClientSession(**self.key_ring) as session:
             async with session.post(URLS["retweet"].format(tweet_id)) as response:
                 if response.status == 403:
@@ -156,11 +158,11 @@ class Api:
                     for error in response_json.get("errors", []):
                         message = error.get("message", None)
                         if message == "You have already retweeted this Tweet.":
-                            print(message)
+                            self.logger.info(message)
                             return
-                    print(response_json)
+                    self.logger.info(response_json)
                 response.raise_for_status()
-        print("Tweet retweeted!")
+        self.logger.info("Tweet retweeted!")
         
     @STATUS_LIMITER.ratelimit("comment", delay=True)
     async def comment(self, tweet_id: int, text: str):
@@ -176,7 +178,7 @@ class Api:
             "status": text,
         }
 
-        print(f"Commenting [TweetId: {tweet_id}, Status: {text}] ...")
+        self.logger.info(f"Commenting [TweetId: {tweet_id}, Status: {text}] ...")
         async with OAuth1ClientSession(**self.key_ring) as session:
             async with session.post(URLS["tweet"], params=params, data=data) as response:
                 if response.status == 403:
@@ -184,11 +186,11 @@ class Api:
                     for error in response_json.get("errors", []):
                         message = error.get("message", None)
                         if message == "Status is a duplicate.":
-                            print(message)
+                            self.logger.info(message)
                             return
-                    print(response_json)
+                    self.logger.info(response_json)
                 response.raise_for_status()
-        print("Tweet commented on!")
+        self.logger.info("Tweet commented on!")
 
     @GET_FOLLOWERS_LIMITER.ratelimit("get_followers", delay=True)
     async def get_user_followers(self, screen_name: str) -> list[User]:
@@ -203,7 +205,7 @@ class Api:
         }
 
         followers: list[User] = []
-        print(f"Getting followers ... [Screen Name: {screen_name}]")
+        self.logger.info(f"Getting followers ... [Screen Name: {screen_name}]")
         async with OAuth1ClientSession(**self.key_ring) as session:
             response = None
             response_json = {}
@@ -215,7 +217,7 @@ class Api:
                 async with session.get(URLS["get_user_followers"], params=params) as response:
                     response_json = await response.json()
                     if response.status >= 400:
-                        print(response_json)
+                        self.logger.info(response_json)
                     response.raise_for_status()
                     for user in response_json["users"]:
                         followers.append(User(id=user["id"], screen_name=user["screen_name"]))
@@ -223,7 +225,7 @@ class Api:
                     if response_json.get("next_cursor", 0) != 0:
                         await asyncio.sleep(5)
         
-        print(f"Got [{len(followers)}] Followers!")
+        self.logger.info(f"Got [{len(followers)}] Followers!")
         return followers
 
     @GET_REPLIES_LIMITER.ratelimit("get_replies", delay=True)
@@ -241,7 +243,7 @@ class Api:
         reply_ids: list[int] = []
         num_pages = 5
 
-        print(f"Getting user replies ... [Screen Name: {screen_name}]")
+        self.logger.info(f"Getting user replies ... [Screen Name: {screen_name}]")
         async with OAuth1ClientSession(**self.key_ring) as session:
             min_id = float("inf")
             for _ in range(num_pages):
@@ -252,7 +254,7 @@ class Api:
                 async with session.get(URLS["get_user_tweets"], params=params) as response:
                     response_json = await response.json()
                     if response.status >= 400:
-                        print(response_json)
+                        self.logger.info(response_json)
                     response.raise_for_status()
                     for tweet_dict in response_json:
                         tweet_id: int = tweet_dict["id"]
@@ -264,7 +266,7 @@ class Api:
 
                 await asyncio.sleep(5)
         
-        print(f"Got [{len(reply_ids)}] Replies!")
+        self.logger.info(f"Got [{len(reply_ids)}] Replies!")
         return reply_ids
 
 
