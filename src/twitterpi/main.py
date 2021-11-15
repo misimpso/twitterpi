@@ -3,6 +3,7 @@ import logging
 import logging.config
 import toml
 
+from contextlib import closing
 from logging.handlers import QueueHandler, QueueListener, RotatingFileHandler
 from pathlib import Path
 from queue import SimpleQueue as Queue
@@ -111,8 +112,8 @@ class TwitterBot:
             accounts (list[obj: Account]): List of instantiated Account objects.
         """
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.gather(*[account.start() for account in accounts]))
+        with closing(asyncio.get_event_loop()) as loop:
+            loop.run_until_complete(asyncio.gather(*[account.start() for account in accounts]))
 
 
 def main():
