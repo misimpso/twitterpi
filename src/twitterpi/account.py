@@ -73,7 +73,11 @@ class Account:
                 directive.follow = True
                 break
 
-        directive.tag = ("tag" in tweet_text)
+        for keyword in ("tag", "mention"):
+            if keyword in tweet_text:
+                directive.tag = True
+                break
+
         directive.comment = ("comment" in tweet_text)
 
         return directive
@@ -114,6 +118,10 @@ class Account:
 
         if not actions and not priority_actions:
             print("Nothing to act upon.")
+            return
+        
+        if directive.retweet and not (directive.favorite or directive.follow or directive.tag or directive.comment):
+            print("Not enough directives to act upon.")
             return
 
         random.shuffle(priority_actions)
