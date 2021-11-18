@@ -2,7 +2,6 @@ import logging
 import random
 
 from asyncio import sleep
-from time import time
 from twitterpi.api import Api
 from twitterpi.cache import Cache
 from twitterpi.dto import Directive, Tweet, User
@@ -17,16 +16,21 @@ class Account:
     tagged_comments: list[str] = None
 
     def __init__(self, screen_name: str, api: Api, cache: Cache):
-        """ TODO: docstring
+        """ Main controller for account interaction.
+
+        Args:
+            screen_name (str): Account screen name (from credentials.toml).
+            api (obj: Api): Api object with consumer / secret keys already setup.
+            cache (obj: Cache): Cache object for storing / referencing tweets.
         """
 
-        self.logger = logging.getLogger(screen_name)
+        self.logger: logging.Logger = logging.getLogger(screen_name)
         self.screen_name: str = screen_name
-        self.api = api
-        self.cache = cache
+        self.api: Api = api
+        self.cache: Cache = cache
     
     async def start(self):
-        """ TODO: docstring
+        """ Main loop for getting and interacting with tweets.
         """
 
         while True:
@@ -43,7 +47,13 @@ class Account:
             await sleep(5.0)
     
     async def parse(self, tweet_text: str) -> Directive:
-        """ TODO: docstring
+        """ Parse given `tweet_text` and generate a `Directive` object from text contents.
+
+        Args:
+            tweet_text (str): String of tweet text.
+        
+        Returns:
+            (obj: Directive)
         """
 
         directive = Directive()
@@ -67,7 +77,10 @@ class Account:
         return directive
     
     async def interact(self, tweet: Tweet):
-        """ TODO: docstring
+        """ Interact with given `tweet` based on its text contents.
+
+        Args:
+            tweet (obj: Tweet): Tweet to interact with.
         """
 
         actions: list[tuple] = []
@@ -106,7 +119,11 @@ class Account:
         self.logger.info("Tweet interacted!")
 
     async def get_tweet(self) -> Optional[Tweet]:
-        """ TODO: docstring
+        """ Get a tweet to interact with. If tweets don't exist in cache,
+            get tweets from API and populate the cache.
+        
+        Returns:
+            (obj: Tweet | None): A tweet to interact with or None.
         """
 
         # Get tweet from database
@@ -128,7 +145,10 @@ class Account:
         return tweet
 
     async def follow_user(self, user: User):
-        """ TODO: docstring
+        """ Send request to API to follow the given `user`.
+
+        Args:
+            user (obj: User) User to follow
         """
 
         await self.api.follow_user(user_id=user.id)
