@@ -17,7 +17,6 @@ class Limiter:
         self._last_call_time = 0
         self.interval = (1 / requests_per_day) * SECONDS_IN_A_DAY
     
-    
     def acquire(self, func):
         """ TODO: docstring
         """
@@ -27,11 +26,10 @@ class Limiter:
             """
 
             current_time = perf_counter()
-            sleep_time = self.interval - current_time - self._last_call_time
+            sleep_time = self.interval - (current_time - self._last_call_time)
             if sleep_time > 0:
-                self.logger.info(f"Sleeping for [{sleep_time}] seconds.")
+                self.logger.info(f"Sleeping for [{sleep_time:.2f}] seconds.")
                 await sleep(sleep_time)
-                self._last_call_time = perf_counter()
-
+            self._last_call_time = perf_counter()
             return await func(*args, **kwargs)
         return wrapper
