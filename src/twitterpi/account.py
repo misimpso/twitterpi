@@ -91,7 +91,7 @@ class Account:
             for mention in tweet.mentions:
                 actions.append((self.follow_user, {"user": mention}))
 
-        if not actions and not priority_actions:
+        if not actions:
             self.logger.info("Nothing to act upon.")
             return
         
@@ -129,32 +129,7 @@ class Account:
 
             tweet: Tweet = await self.cache.get_tweet()
         return tweet
-    
-    async def comment(self, tweet: Tweet, tag: bool = False):
-        """ TODO: docstring
-        """
 
-        if await self.cache.check_tweet_replied(tweet):
-            self.logger.info("Tweet already replied to.")
-            return
-
-        # Replies / Comments must start with mention of Tweet Author's screen name
-        comment_text: str = f"@{tweet.author.screen_name} "
-
-        if tag == True:
-            random_amount: int = random.randint(2, 3)
-            rand_followers: list[User] = await self.cache.get_random_followers(random_amount)
-            follower_string = " ".join([f"@{follower.screen_name}" for follower in rand_followers])
-
-            # Tagged comments have `{}` format placeholders for follower string
-            comment_text += random.choice(self.tagged_comments).format(follower_string)
-
-        else:
-            comment_text += random.choice(self.normal_comments)
-
-        await self.api.comment(tweet_id=tweet.id, text=comment_text)
-        await self.cache.insert_reply(tweet.id)
-    
     async def follow_user(self, user: User):
         """ TODO: docstring
         """
