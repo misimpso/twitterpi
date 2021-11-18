@@ -1,17 +1,9 @@
-import asyncio
 import logging
 
 from pprint import pprint
-from pyrate_limiter import Duration, Limiter, RequestRate
 from twitterpi.dto import Tweet, User
+from twitterpi.limiter import Limiter
 from twitterpi.oauth1_client import OAuth1ClientSession
-from typing import Optional
-
-"""
-TODO:
- - Proc rate limits with values from API
- - Add random sleep as wrapper method around API calls
-"""
 
 
 BASE_URL = "https://api.twitter.com/1.1/"
@@ -26,11 +18,10 @@ URLS = {
     "get_user_tweets": f"{BASE_URL}statuses/user_timeline.json",
 }
 
-SEARCH_LIMITER = Limiter(RequestRate(180, Duration.MINUTE * 15))
-FAVORITE_TWEET_LIMITER = Limiter(RequestRate(1000, Duration.DAY))
-FOLLOW_USER_LIMITER = Limiter(RequestRate(400, Duration.DAY))
-GET_FOLLOWERS_LIMITER = Limiter(RequestRate(15, Duration.MINUTE * 15))
-GET_REPLIES_LIMITER = Limiter(RequestRate(900, Duration.MINUTE * 15))
+SEARCH_LIMITER = Limiter("search", requests_per_day=17280)
+FAVORITE_LIMITER = Limiter("favorite", requests_per_day=1000)
+FOLLOW_LIMITER = Limiter("follower", requests_per_day=400)
+RETWEET_LIMITER = Limiter("retweet", requests_per_day=1200)
 
 
 class Api:
@@ -51,11 +42,12 @@ class Api:
             "access_token_secret": access_token_secret,
         }
 
-    @SEARCH_LIMITER.ratelimit("search", delay=True)
+    @SEARCH_LIMITER.acquire
     async def get_tweets(self, search_term: str) -> list[Tweet]:
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/api-reference/get-search-tweets
         """
+
         self.logger.info(f"Searching tweets [Search Term: {search_term}] ...")
 
         params = {
@@ -100,7 +92,7 @@ class Api:
         self.logger.info(f"Received [{len(tweets)}] Tweets!")
         return tweets
     
-    @FAVORITE_TWEET_LIMITER.ratelimit("favorite_tweet", delay=True)
+    @FAVORITE_LIMITER.acquire
     async def favorite_tweet(self, tweet_id: int):
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-favorites-create
@@ -124,7 +116,7 @@ class Api:
                 response.raise_for_status()
         self.logger.info("Tweet favorited!")
     
-    @FOLLOW_USER_LIMITER.ratelimit("follow_user", delay=True)
+    @FOLLOW_LIMITER.acquire
     async def follow_user(self, user_id: int):
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
@@ -143,86 +135,25 @@ class Api:
                 response.raise_for_status()
         self.logger.info("User followed!")
 
-    @GET_FOLLOWERS_LIMITER.ratelimit("get_followers", delay=True)
-    async def get_user_followers(self, screen_name: str) -> list[User]:
+    @RETWEET_LIMITER.acquire
+    async def retweet(self, tweet_id: int):
         """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/get-followers-list
+        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-retweet-id
         """
 
-        params = {
-            "screen_name": screen_name,
-            "count": "100",
-            "skip_status": "true",
-        }
-
-        followers: list[User] = []
-        self.logger.info(f"Getting followers ... [Screen Name: {screen_name}]")
+        self.logger.info(f"Retweeting [TweetId: {tweet_id}] ...")
         async with OAuth1ClientSession(**self.key_ring) as session:
-            response = None
-            response_json = {}
-            while response is None or response_json.get("next_cursor", 0) != 0:
-
-                if response_json.get("next_cursor", 0) != 0:
-                    params.update({"cursor": str(response_json["next_cursor"])})
-
-                async with session.get(URLS["get_user_followers"], params=params) as response:
-                    response_json = await response.json()
-                    if response.status >= 400:
-                        self.logger.info(response_json)
-                    response.raise_for_status()
-                    for user in response_json["users"]:
-                        followers.append(User(id=user["id"], screen_name=user["screen_name"]))
-
-                    if response_json.get("next_cursor", 0) != 0:
-                        await asyncio.sleep(5)
-        
-        self.logger.info(f"Got [{len(followers)}] Followers!")
-        return followers
-
-    @GET_REPLIES_LIMITER.ratelimit("get_replies", delay=True)
-    async def get_user_replies(self, screen_name: str) -> list[int]:
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/timelines/api-reference/get-statuses-user_timeline
-        """
-
-        params = {
-            "screen_name": screen_name,
-            "count": "200",
-            "exclude_replies": "false",
-        }
-
-        reply_ids: list[int] = []
-        num_pages = 5
-
-        self.logger.info(f"Getting user replies ... [Screen Name: {screen_name}]")
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            min_id = float("inf")
-            for _ in range(num_pages):
-                # Set max id for next page to be min id of previous page
-                if min_id != float("inf"):
-                    params.update({"max_id": str(min_id)})
-
-                async with session.get(URLS["get_user_tweets"], params=params) as response:
-                    response_json = await response.json()
-                    if response.status >= 400:
-                        self.logger.info(response_json)
-                    response.raise_for_status()
-                    for tweet_dict in response_json:
-                        tweet_id: int = tweet_dict["id"]
-                        min_id = min(min_id, tweet_id)
-
-                        original_status_id: Optional[int] = tweet_dict["in_reply_to_status_id"]
-                        if original_status_id != None:
-                            reply_ids.append(original_status_id)
-
-                await asyncio.sleep(5)
-        
-        self.logger.info(f"Got [{len(reply_ids)}] Replies!")
-        return reply_ids
-
-    async def get_rate_limits(self):
-        ...
-
+            async with session.post(URLS["retweet"].format(tweet_id)) as response:
+                if response.status == 403:
+                    response_json: dict = await response.json()
+                    for error in response_json.get("errors", []):
+                        message = error.get("message", None)
+                        if message == "You have already retweeted this Tweet.":
+                            self.logger.info(message)
+                            return
+                    self.logger.info(response_json)
+                response.raise_for_status()
+        self.logger.info("Tweet retweeted!")
 
 
 # DEMO METHODS
