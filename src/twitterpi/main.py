@@ -13,7 +13,6 @@ from twitterpi.cache import Cache
 from typing import Any
 
 CONF_PATH = Path(__file__).parent / "conf"
-COMMENT_STUBS_PATH = CONF_PATH / "comment_stubs.toml"
 CREDS_PATH = CONF_PATH / "credentials.toml"
 LOGGING_CONFIG_PATH = CONF_PATH / "logging.conf"
 LOG_PATH = Path(__file__).parent / "logs" / "twitterpi.log"
@@ -59,20 +58,6 @@ class TwitterBot:
             cache = Cache(account_name)
             accounts.append(Account(screen_name=account_name, api=api, cache=cache))
         return accounts
-    
-    def load_comments(self, comment_stubs_path: Path):
-        """ Read comment stubs from given `comment_stubs_path` and set Account `normal_comments` and
-            `tagged_comments` static variables. 
-
-        Args:
-            comment_stubs_path (obj: Path): Path to file with comment stubs.
-        """
-
-        comment_stubs: dict[str, Any] = read_toml(comment_stubs_path)
-        Account.normal_comments = comment_stubs["comments"].strip().split("\n")
-        Account.tagged_comments = comment_stubs["tagged_comments"].strip().split("\n")
-        self.logger.info(f"Loaded [{len(Account.normal_comments)}] comment stubs.")
-        self.logger.info(f"Loaded [{len(Account.tagged_comments)}] tagged comment stubs.")
 
     def setup_logging(self, logging_level: int = logging.INFO):
         """ TODO: docstring
@@ -122,7 +107,6 @@ def main():
 
     bot = TwitterBot()
     bot.setup_logging()
-    bot.load_comments(COMMENT_STUBS_PATH)
     accounts = bot.load_accounts(CREDS_PATH)
     bot.run(accounts)
 
