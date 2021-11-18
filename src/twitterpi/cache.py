@@ -1,5 +1,4 @@
 import json
-import random
 
 from aiopath import AsyncPath
 from datetime import datetime
@@ -57,20 +56,6 @@ class Cache:
         """
 
         tweet_path: AsyncPath = self.seen_dir / f"{tweet.id}.json"
-        return await tweet_path.exists()
-    
-    async def check_replies_populated(self) -> bool:
-        """ TODO: docstring
-        """
-
-        reply_path: Optional[AsyncPath] = await anext(self.replies_dir.glob("*.json"))
-        return reply_path != None
-
-    async def check_tweet_replied(self, tweet: Tweet) -> bool:
-        """ TODO: docstring
-        """
-
-        tweet_path: AsyncPath = self.replies_dir / f"{tweet.id}.json"
         return await tweet_path.exists()
 
     # INSERTIONS ---
