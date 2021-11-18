@@ -29,6 +29,8 @@ class Account:
         """ TODO: docstring
         """
 
+        
+
         while True:
             tweet: Tweet = await self.get_tweet()
 
@@ -64,13 +66,6 @@ class Account:
                 directive.follow = True
                 break
 
-        for keyword in ("tag", "mention"):
-            if keyword in tweet_text:
-                directive.tag = True
-                break
-
-        directive.comment = ("comment" in tweet_text)
-
         return directive
     
     async def interact(self, tweet: Tweet):
@@ -78,7 +73,6 @@ class Account:
         """
 
         actions: list[tuple] = []
-        priority_actions: list[tuple] = []
         directive: Directive = await self.parse(tweet.text)
 
         self.logger.info(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")        
@@ -97,33 +91,20 @@ class Account:
             for mention in tweet.mentions:
                 actions.append((self.follow_user, {"user": mention}))
 
-        if directive.tag or directive.comment:
-            if not await self.cache.check_replies_populated():
-                priority_actions.append((self.populate_replies, {}))
-
-            if directive.tag:
-                if not await self.cache.check_followers_populated():
-                    priority_actions.append((self.populate_followers, {}))
-
-            actions.append((self.comment, {"tweet": tweet, "tag": directive.tag}))
-
         if not actions and not priority_actions:
             self.logger.info("Nothing to act upon.")
             return
         
-        if directive.retweet and not (directive.favorite or directive.follow or directive.tag or directive.comment):
+        if directive.retweet and not (directive.favorite or directive.follow):
             self.logger.info("Not enough directives to act upon.")
             return
 
-        random.shuffle(priority_actions)
         random.shuffle(actions)
-
-        actions = priority_actions + actions
         
-        # for action in actions:
-        #     endpoint, kwargs = action
-        #     await endpoint(**kwargs)
-        #     await self.random_sleep()
+        for action in actions:
+            endpoint, kwargs = action
+            await endpoint(**kwargs)
+            await self.random_sleep()
         
         self.logger.info("Tweet interacted!")
 
@@ -180,20 +161,6 @@ class Account:
 
         await self.api.follow_user(user_id=user.id)
         await self.cache.insert_follower(user)
-    
-    async def populate_followers(self):
-        """ TODO: docstring
-        """
-
-        followers: list[User] = await self.api.get_user_followers(self.screen_name)
-        await self.cache.insert_followers(followers)
-    
-    async def populate_replies(self):
-        """ TODO: docstring
-        """
-
-        tweets: list[int] = await self.api.get_user_replies(self.screen_name)
-        await self.cache.insert_replies(tweets)
     
     async def random_sleep(self):
         """ TODO: docstring

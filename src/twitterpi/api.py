@@ -27,9 +27,8 @@ URLS = {
 }
 
 SEARCH_LIMITER = Limiter(RequestRate(180, Duration.MINUTE * 15))
-STATUS_LIMITER = Limiter(RequestRate(300, Duration.HOUR * 3))
 FAVORITE_TWEET_LIMITER = Limiter(RequestRate(1000, Duration.DAY))
-FOLLOW_TWEET_LIMITER = Limiter(RequestRate(400, Duration.DAY))
+FOLLOW_USER_LIMITER = Limiter(RequestRate(400, Duration.DAY))
 GET_FOLLOWERS_LIMITER = Limiter(RequestRate(15, Duration.MINUTE * 15))
 GET_REPLIES_LIMITER = Limiter(RequestRate(900, Duration.MINUTE * 15))
 
@@ -125,7 +124,7 @@ class Api:
                 response.raise_for_status()
         self.logger.info("Tweet favorited!")
     
-    @FOLLOW_TWEET_LIMITER.ratelimit("follow_user", delay=True)
+    @FOLLOW_USER_LIMITER.ratelimit("follow_user", delay=True)
     async def follow_user(self, user_id: int):
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
@@ -143,54 +142,6 @@ class Api:
                     self.logger.info(json)
                 response.raise_for_status()
         self.logger.info("User followed!")
-
-    @STATUS_LIMITER.ratelimit("retweet", delay=True)
-    async def retweet(self, tweet_id: int):
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-retweet-id
-        """
-
-        self.logger.info(f"Retweeting [TweetId: {tweet_id}] ...")
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            async with session.post(URLS["retweet"].format(tweet_id)) as response:
-                if response.status == 403:
-                    response_json: dict = await response.json()
-                    for error in response_json.get("errors", []):
-                        message = error.get("message", None)
-                        if message == "You have already retweeted this Tweet.":
-                            self.logger.info(message)
-                            return
-                    self.logger.info(response_json)
-                response.raise_for_status()
-        self.logger.info("Tweet retweeted!")
-        
-    @STATUS_LIMITER.ratelimit("comment", delay=True)
-    async def comment(self, tweet_id: int, text: str):
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-update
-        """
-
-        params = {
-            "in_reply_to_status_id": str(tweet_id),
-        }
-
-        data = {
-            "status": text,
-        }
-
-        self.logger.info(f"Commenting [TweetId: {tweet_id}, Status: {text}] ...")
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            async with session.post(URLS["tweet"], params=params, data=data) as response:
-                if response.status == 403:
-                    response_json = await response.json()
-                    for error in response_json.get("errors", []):
-                        message = error.get("message", None)
-                        if message == "Status is a duplicate.":
-                            self.logger.info(message)
-                            return
-                    self.logger.info(response_json)
-                response.raise_for_status()
-        self.logger.info("Tweet commented on!")
 
     @GET_FOLLOWERS_LIMITER.ratelimit("get_followers", delay=True)
     async def get_user_followers(self, screen_name: str) -> list[User]:
@@ -269,7 +220,8 @@ class Api:
         self.logger.info(f"Got [{len(reply_ids)}] Replies!")
         return reply_ids
 
-
+    async def get_rate_limits(self):
+        ...
 
 
 

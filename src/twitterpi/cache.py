@@ -32,7 +32,7 @@ class Cache:
         """
 
         base_dir: Path = Path(__file__).parent / "cache"
-        for folder in ("new_tweets", "followers", "seen", "replies"):
+        for folder in ("new_tweets", "seen"):
             folder_path: Path = base_dir / account_name / folder
             folder_path.mkdir(exist_ok=True, parents=True)
             setattr(self, f"{folder}_dir", AsyncPath(folder_path))
@@ -51,19 +51,6 @@ class Cache:
             tweet = Tweet(**content_dict)
         
         return tweet
-    
-    async def get_random_followers(self, random_amount: int) -> Optional[list[User]]:
-        """ TODO: docstring
-        """
-
-        followers: list[User] = []
-        follower_files: list[AsyncPath] = [p async for p in self.followers_dir.glob("*.json")]
-        random_amount = min(random_amount, len(follower_files))
-        for follower_file in random.sample(follower_files, k=random_amount):
-            contents: str = await follower_file.read_text()
-            content_dict = json.loads(contents)
-            followers.append(User(**content_dict))
-        return followers
 
     async def check_tweet_seen(self, tweet: Tweet) -> bool:
         """ TODO: docstring
@@ -71,13 +58,6 @@ class Cache:
 
         tweet_path: AsyncPath = self.seen_dir / f"{tweet.id}.json"
         return await tweet_path.exists()
-    
-    async def check_followers_populated(self) -> bool:
-        """ TODO: docstring
-        """
-
-        follower_path: Optional[AsyncPath] = await anext(self.followers_dir.glob("*.json"))
-        return follower_path != None
     
     async def check_replies_populated(self) -> bool:
         """ TODO: docstring
@@ -102,35 +82,6 @@ class Cache:
             tweet_path: AsyncPath = self.new_tweets_dir / f"{tweet.id}.json"
             tweet_json: str = json.dumps(tweet, default=lambda d: custom_pydantic_encoder(ENCODER_DICT, d))
             await tweet_path.write_text(tweet_json)
-    
-    async def insert_followers(self, followers: list[User]):
-        """ TODO: docstring
-        """
-
-        for follower in followers:
-            await self.insert_follower(follower)
-
-    async def insert_follower(self, follower: User):
-        """ TODO: docstring
-        """
-
-        follower_path: AsyncPath = self.followers_dir / f"{follower.id}.json"
-        follower_json: str = json.dumps(follower, default=lambda d: custom_pydantic_encoder(ENCODER_DICT, d))
-        await follower_path.write_text(follower_json)
-
-    async def insert_replies(self, tweets_ids: list[int]):
-        """ TODO: docstring
-        """
-
-        for tweet_id in tweets_ids:
-            await self.insert_reply(tweet_id)
-    
-    async def insert_reply(self, tweet_id: int):
-        """ TODO: docstring
-        """
-
-        reply_path: AsyncPath = self.replies_dir / f"{tweet_id}.json"
-        await reply_path.touch()
 
     async def insert_seen_tweet(self, tweet: Tweet):
         """ TODO: docstring
