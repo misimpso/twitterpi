@@ -5,7 +5,7 @@ from aiopath import AsyncPath
 from datetime import datetime
 from pathlib import Path
 from pydantic.json import custom_pydantic_encoder
-from twitterpi.dto import Tweet, User
+from twitterpi.dto import Tweet
 from twitterpi.dto.tweet import _twitter_datetime_format
 from typing import Any, Optional, AsyncGenerator
 
