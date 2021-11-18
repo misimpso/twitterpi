@@ -1,7 +1,7 @@
-import asyncio
 import logging
 import random
 
+from asyncio import sleep
 from time import time
 from twitterpi.api import Api
 from twitterpi.cache import Cache
@@ -29,8 +29,6 @@ class Account:
         """ TODO: docstring
         """
 
-        
-
         while True:
             tweet: Tweet = await self.get_tweet()
 
@@ -42,7 +40,7 @@ class Account:
             await self.cache.remove_new_tweet(tweet)
             await self.cache.insert_seen_tweet(tweet)
 
-            await self.random_sleep()
+            await sleep(5.0)
     
     async def parse(self, tweet_text: str) -> Directive:
         """ TODO: docstring
@@ -104,7 +102,6 @@ class Account:
         for action in actions:
             endpoint, kwargs = action
             await endpoint(**kwargs)
-            await self.random_sleep()
         
         self.logger.info("Tweet interacted!")
 
@@ -135,14 +132,3 @@ class Account:
         """
 
         await self.api.follow_user(user_id=user.id)
-        await self.cache.insert_follower(user)
-    
-    async def random_sleep(self):
-        """ TODO: docstring
-        """
-        plus_minus = 1 + random.random()
-        if int(time()) % 2 == 0:
-            plus_minus *= -1
-        sleep_amount = random.choice(SLEEP_AMOUNTS) + plus_minus
-        self.logger.info(f"zZz Sleeping for [{sleep_amount:.2f}] seconds zZz")
-        await asyncio.sleep(sleep_amount)
