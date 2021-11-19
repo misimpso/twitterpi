@@ -113,6 +113,9 @@ class Api:
                             self.logger.info(message)
                             return
                     self.logger.info(response_json)
+                if response.status == 404:
+                    self.logger.info("Tweet doesn't exist.")
+                    return
                 response.raise_for_status()
         self.logger.info("Tweet favorited!")
     
@@ -152,6 +155,9 @@ class Api:
                             self.logger.info(message)
                             return
                     self.logger.info(response_json)
+                if response.status == 404:
+                    self.logger.info("Tweet doesn't exist.")
+                    return
                 response.raise_for_status()
         self.logger.info("Tweet retweeted!")
 
