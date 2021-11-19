@@ -8,13 +8,7 @@ from twitterpi.dto import Directive, Tweet, User
 from typing import Optional
 
 
-SLEEP_AMOUNTS = list(range(15, 30, 2))
-
-
 class Account:
-    normal_comments: list[str] = None
-    tagged_comments: list[str] = None
-
     def __init__(self, screen_name: str, api: Api, cache: Cache):
         """ Main controller for account interaction.
 
@@ -90,6 +84,10 @@ class Account:
         for line in tweet.text.split("\n"):
             self.logger.info(f" │ {line}")
         self.logger.info(f" └─────── {directive}")
+
+        if not ((directive.retweet and directive.follow) or (directive.retweet and directive.favorite)):
+            self.logger.info("Not enough directives to act upon.")
+            return
         
         if directive.retweet:
             actions.append((self.api.retweet, {"tweet_id": tweet.id}))
@@ -104,10 +102,6 @@ class Account:
 
         if not actions:
             self.logger.info("Nothing to act upon.")
-            return
-        
-        if directive.retweet and not (directive.favorite or directive.follow):
-            self.logger.info("Not enough directives to act upon.")
             return
 
         random.shuffle(actions)
@@ -139,7 +133,6 @@ class Account:
             for search_term in search_terms:
                 new_tweets: list[Tweet] = await self.api.get_tweets(search_term)
                 await self.cache.insert_new_tweets(tweets=new_tweets)
-                await self.random_sleep()
 
             tweet: Tweet = await self.cache.get_tweet()
         return tweet
