@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 credentials.toml
+settings.toml
 cache/

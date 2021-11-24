@@ -16,6 +16,8 @@ access_token_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 ```
 You can add multiple accounts to this credentials file. When populated, remove `.sample` suffix.
 
+Make sure you set the birthdate of your account or your follow requests will fail on certain age-restricted users (e.g. alcohol brands).
+
 ## Process
 - For each account:
     - Search for latest tweets matching criteria.

@@ -1,0 +1,8 @@
+[AccountName]
+search_terms = [
+    "#win OR #giveaway"
+]
+filters = [
+    "retweets",
+    "replies"
+]
