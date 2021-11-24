@@ -14,6 +14,7 @@ from typing import Any
 
 CONF_PATH = Path(__file__).parent / "conf"
 CREDS_PATH = CONF_PATH / "credentials.toml"
+SETTINGS_PATH = CONF_PATH / "settings.toml"
 LOGGING_CONFIG_PATH = CONF_PATH / "logging.conf"
 LOG_PATH = Path(__file__).parent / "logs" / "twitterpi.log"
 
@@ -40,23 +41,49 @@ class TwitterBot:
     
     logger = logging.getLogger(__name__)
 
-    def load_accounts(self, creds_path: Path) -> list[Account]:
+    def load_accounts(self, creds_path: Path, settings_path: Path) -> list[Account]:
         """ Read account credentials from given `creds_path` and instantiate Api, Cache, and Account objects.
 
         Args:
             creds_path (obj: Path): Path of account credentials file.
+            settings_path (obj: Path): Path of account settings file.
         
         Returns:
             list[obj: Account]: List of Account objects.
         """
 
         account_creds: dict[str, Any] = read_toml(creds_path)
+        account_settings: dict[str, Any] = read_toml(settings_path)
+
+        if account_creds.keys() != account_settings.keys():
+            raise RuntimeError(
+                "Account credentials and settings files don't have matching sections. ",
+                f"[Creds: {list(account_creds.keys())}, Settings: {list(account_settings.keys())}]",
+            )
+
         accounts: list[Account] = []
         for account_name in account_creds:
-            creds = account_creds[account_name]
-            api = Api(**creds)
-            cache = Cache(account_name)
-            accounts.append(Account(screen_name=account_name, api=api, cache=cache))
+
+            creds: dict[str, str] = account_creds[account_name]
+            settings: dict[str, list[str]] = account_settings[account_name]
+
+            api = Api(
+                consumer_key=creds["consumer_key"],
+                consumer_secret=creds["consumer_secret"],
+                access_token=creds["access_token"],
+                access_token_secret=creds["access_token_secret"],
+            )
+            cache = Cache(account_name=account_name)
+
+            account = Account(
+                screen_name=account_name,
+                api=api,
+                cache=cache,
+                search_terms=settings["search_terms"],
+                filter_terms=settings["filters"],
+            )
+
+            accounts.append(account)
         return accounts
 
     def setup_logging(self, logging_level: int = logging.INFO):
@@ -111,7 +138,7 @@ def main():
 
     bot = TwitterBot()
     bot.setup_logging()
-    accounts = bot.load_accounts(CREDS_PATH)
+    accounts = bot.load_accounts(CREDS_PATH, SETTINGS_PATH)
     bot.run(accounts)
 
 

@@ -9,19 +9,28 @@ from typing import Optional
 
 
 class Account:
-    def __init__(self, screen_name: str, api: Api, cache: Cache):
+    def __init__(self, screen_name: str, api: Api, cache: Cache, search_terms: list[str], filter_terms: list[str]):
         """ Main controller for account interaction.
 
         Args:
             screen_name (str): Account screen name (from credentials.toml).
             api (obj: Api): Api object with consumer / secret keys already setup.
             cache (obj: Cache): Cache object for storing / referencing tweets.
+            search_terms (list[str]): List of search terms.
+            filter_terms (list[str]): List of filter terms to append to each search term.
         """
 
         self.logger: logging.Logger = logging.getLogger(screen_name)
+
         self.screen_name: str = screen_name
         self.api: Api = api
         self.cache: Cache = cache
+
+        # Append filter terms to each search term
+        self.search_terms = [
+            f"{search_term} {' '.join([f'-filter:{filter_term}' for filter_term in filter_terms])}".strip()
+            for search_term in search_terms
+        ]
     
     async def start(self):
         """ Main loop for getting and interacting with tweets.
@@ -96,9 +105,9 @@ class Account:
             actions.append((self.api.favorite_tweet, {"tweet_id": tweet.id}))
 
         if directive.follow:
-            actions.append((self.follow_user, {"user": tweet.author}))
+            actions.append((self.api.follow_user, {"user": tweet.author}))
             for mention in tweet.mentions:
-                actions.append((self.follow_user, {"user": mention}))
+                actions.append((self.api.follow_user, {"user": mention}))
 
         if not actions:
             self.logger.info("Nothing to act upon.")
@@ -125,13 +134,10 @@ class Account:
 
         if not tweet:
             # Get tweets from API and insert into database
-            search_terms = [
-                '#win OR #giveaway -filter:retweets -filter:replies',
-                '#csgogiveaway -filter:retweets -filter:replies'
-            ]
-
-            for search_term in search_terms:
+            for search_term in self.search_terms:
                 new_tweets: list[Tweet] = await self.api.get_tweets(search_term)
+                if len(new_tweets) == 0:
+                    raise ValueError(f"Search returned no tweets. [{search_term}]")
                 await self.cache.insert_new_tweets(tweets=new_tweets)
 
             tweet: Tweet = await self.cache.get_tweet()
