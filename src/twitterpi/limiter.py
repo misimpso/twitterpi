@@ -15,7 +15,7 @@ class Limiter:
         self.logger = logging.getLogger(name)
         self.requests_per_day = requests_per_day
         self._last_call_time = 0
-        self.interval = (1 / requests_per_day) * SECONDS_IN_A_DAY
+        self.interval = SECONDS_IN_A_DAY / requests_per_day
     
     def acquire(self, func):
         """ TODO: docstring
