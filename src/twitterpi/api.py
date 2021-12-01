@@ -62,32 +62,36 @@ class Api:
         }
 
         tweets: list[Tweet] = []
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            async with session.get(URLS["search"], params=params, data=data) as response:
-                response.raise_for_status()
-                response_json = await response.json()
-                for tweet in response_json["statuses"]:
+        try:
+            async with OAuth1ClientSession(**self.key_ring) as session:
+                async with session.get(URLS["search"], params=params, data=data) as response:
+                    response.raise_for_status()
+                    response_json = await response.json()
+                    for tweet in response_json["statuses"]:
 
-                    if tweet["in_reply_to_status_id"] != None:
-                        continue
-                    if tweet["in_reply_to_user_id"] != None:
-                        continue
-                    if tweet["in_reply_to_screen_name"] != None:
-                        continue
+                        if tweet["in_reply_to_status_id"] != None:
+                            continue
+                        if tweet["in_reply_to_user_id"] != None:
+                            continue
+                        if tweet["in_reply_to_screen_name"] != None:
+                            continue
 
-                    author = User(id=tweet["user"]["id"], screen_name=tweet["user"]["screen_name"])
-                    mentions = [
-                        User(id=mention["id"], screen_name=mention["screen_name"])
-                        for mention in tweet["entities"]["user_mentions"]
-                    ]
-                    tweets.append(
-                        Tweet(
-                            id=tweet["id"],
-                            created_at=tweet["created_at"],
-                            text=tweet["full_text"],
-                            author=author,
-                            mentions=mentions,
-                        ))
+                        author = User(id=tweet["user"]["id"], screen_name=tweet["user"]["screen_name"])
+                        mentions = [
+                            User(id=mention["id"], screen_name=mention["screen_name"])
+                            for mention in tweet["entities"]["user_mentions"]
+                        ]
+                        tweets.append(
+                            Tweet(
+                                id=tweet["id"],
+                                created_at=tweet["created_at"],
+                                text=tweet["full_text"],
+                                author=author,
+                                mentions=mentions,
+                            ))
+        except Exception as e:
+            self.logger.exception(f"Unexpected exception [get_tweets]")
+            raise e
 
         self.logger.info(f"Received [{len(tweets)}] Tweets!")
         return tweets
@@ -99,44 +103,62 @@ class Api:
         """
 
         params = {
-            "id": str(tweet_id)
+            "id": str(tweet_id),
         }
 
         self.logger.info(f"Favoriting tweet [TweetId: {tweet_id}] ...")
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            async with session.post(URLS["favorite_tweet"], params=params) as response:
-                if response.status == 403:
-                    response_json: dict = await response.json()
-                    for error in response_json.get("errors", []):
-                        message = error.get("message", None)
-                        if message == "You have already favorited this status.":
-                            self.logger.info(message)
-                            return
-                    self.logger.info(response_json)
-                if response.status == 404:
-                    self.logger.info("Tweet doesn't exist.")
-                    return
-                response.raise_for_status()
-        self.logger.info("Tweet favorited!")
+        try:
+            async with OAuth1ClientSession(**self.key_ring) as session:
+                async with session.post(URLS["favorite_tweet"], params=params) as response:
+                    if response.status == 403:
+                        response_json: dict = await response.json()
+                        for error in response_json.get("errors", []):
+                            message = error.get("message", None)
+                            if message == "You have already favorited this status.":
+                                self.logger.info(message)
+                                return
+                        self.logger.info(response_json)
+                    if response.status == 404:
+                        self.logger.info("Tweet doesn't exist.")
+                        return
+                    response.raise_for_status()
+            self.logger.info("Tweet favorited!")
+        except Exception as e:
+            self.logger.exception(f"Unexpected exception [favorite_tweet]")
+            raise e
     
     @FOLLOW_LIMITER.acquire
-    async def follow_user(self, user_id: int):
+    async def follow_user(self, user: User):
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
         """
 
         params = {
-            "user_id": str(user_id)
+            "user_id": str(user.id),
         }
 
-        self.logger.info(f"Following user [UserId: {user_id}] ...")
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            async with session.post(URLS["follow_user"], params=params) as response:
-                if response.status == 403:
-                    json = await response.json()
-                    self.logger.info(json)
-                response.raise_for_status()
-        self.logger.info("User followed!")
+        self.logger.info(f"Following user [@{user.screen_name}] ...")
+        try:
+            async with OAuth1ClientSession(**self.key_ring) as session:
+                async with session.post(URLS["follow_user"], params=params) as response:
+                    if response.status == 403:
+                        response_json: dict = await response.json()
+                        for error in response_json.get("errors", []):
+                            code = error.get("code", -1)
+                            message = error.get("message", None)
+                            if message == "Cannot find specified user.":
+                                self.logger.info(message)
+                                return
+                            # You've already requested to follow
+                            if code == 160:
+                                self.logger.info(message)
+                                return
+                        self.logger.info(response_json)
+                    response.raise_for_status()
+            self.logger.info("User followed!")
+        except Exception as e:
+            self.logger.exception(f"Unexpected exception [follow_user]")
+            raise e
 
     @RETWEET_LIMITER.acquire
     async def retweet(self, tweet_id: int):
@@ -145,21 +167,25 @@ class Api:
         """
 
         self.logger.info(f"Retweeting [TweetId: {tweet_id}] ...")
-        async with OAuth1ClientSession(**self.key_ring) as session:
-            async with session.post(URLS["retweet"].format(tweet_id)) as response:
-                if response.status == 403:
-                    response_json: dict = await response.json()
-                    for error in response_json.get("errors", []):
-                        message = error.get("message", None)
-                        if message == "You have already retweeted this Tweet.":
-                            self.logger.info(message)
-                            return
-                    self.logger.info(response_json)
-                if response.status == 404:
-                    self.logger.info("Tweet doesn't exist.")
-                    return
-                response.raise_for_status()
-        self.logger.info("Tweet retweeted!")
+        try:
+            async with OAuth1ClientSession(**self.key_ring) as session:
+                async with session.post(URLS["retweet"].format(tweet_id)) as response:
+                    if response.status == 403:
+                        response_json: dict = await response.json()
+                        for error in response_json.get("errors", []):
+                            message = error.get("message", None)
+                            if message == "You have already retweeted this Tweet.":
+                                self.logger.info(message)
+                                return
+                        self.logger.info(response_json)
+                    if response.status == 404:
+                        self.logger.info("Tweet doesn't exist.")
+                        return
+                    response.raise_for_status()
+            self.logger.info("Tweet retweeted!")
+        except Exception as e:
+            self.logger.exception(f"Unexpected exception [retweet]")
+            raise e
 
 
 # DEMO METHODS
