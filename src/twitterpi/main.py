@@ -140,35 +140,23 @@ class TwitterBot:
             loop.run_until_complete(asyncio.gather(*[account.start() for account in accounts]))
 
 
-def main(creds_path: Path, settings_path: Path, log_path: Path, log_level: str):
-    """ Load the account info from the given `creds_path` and `settings_path` arguments, setup the logging, and start the bots.
-
-    Args:
-        creds_path (obj: Path): Path to account credentials file.
-        settings_path (obj: Path): Path to account settings file.
-        log_path (obj: Path): Path to output log file.
-        log_level (str): Desired log level.
+def main():
+    """ Load account credentials and settings, setup logging, and start Twitter bots.
     """
 
+    parser = argparse.ArgumentParser(description="Twitter Giveaway Bot")
+    parser.add_argument("-c", "--creds-path", type=Path, dest="creds_path", default=CREDS_PATH, required=False, help="Path to account credentials file.")
+    parser.add_argument("-s", "--settings-path", type=Path, dest="settings_path", default=SETTINGS_PATH, required=False, help="Path to account settings file.")
+    parser.add_argument("-o", "--log-path", type=Path, dest="log_path", default=LOG_PATH, required=False, help="Path to output log file.")
+    parser.add_argument("-l", "--log-level", type=str, dest="log_level", default="INFO", choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), required=False, help="Desired log level.")
+
+    args = parser.parse_args()
+
     bot = TwitterBot()
-    bot.setup_logging(log_path, log_level)
-    accounts = bot.load_accounts(creds_path, settings_path)
+    bot.setup_logging(log_path=args.log_path, log_level=args.log_level)
+    accounts = bot.load_accounts(creds_path=args.creds_path, settings_path=args.settings_path)
     bot.run(accounts)
 
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Twitter Giveaway Bot")
-    parser.add_argument("-c", "--creds-path", type=Path, dest="creds_path", default=CREDS_PATH, help="Path to account credentials file.")
-    parser.add_argument("-s", "--settings-path", type=Path, dest="settings_path", default=SETTINGS_PATH, help="Path to account settings file.")
-    parser.add_argument("-o", "--log-path", type=Path, dest="log_path", default=LOG_PATH, help="Path to output log file.")
-    parser.add_argument("-l", "--log-level", type=str, dest="log_level", default="INFO", choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), help="Desired log level.")
-
-    args = parser.parse_args()
-
-    main(
-        creds_path=args.creds_path,
-        settings_path=args.settings_path,
-        log_path=args.log_path,
-        log_level=args.log_level,
-    )
+    main()
