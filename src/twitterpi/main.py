@@ -11,6 +11,7 @@ from queue import SimpleQueue as Queue
 from twitterpi.account import Account
 from twitterpi.api import Api
 from twitterpi.cache import Cache
+from twitterpi.oauth1_client import OAuth1ClientSession
 from typing import Any
 
 CONF_DIR = Path(__file__).parent / "conf"
@@ -67,12 +68,14 @@ class TwitterBot:
             creds: dict[str, str] = account_creds[account_name]
             settings: dict[str, list[str]] = account_settings[account_name]
 
-            api = Api(
+            oauth_session = OAuth1ClientSession(
                 consumer_key=creds["consumer_key"],
                 consumer_secret=creds["consumer_secret"],
                 access_token=creds["access_token"],
                 access_token_secret=creds["access_token_secret"],
             )
+
+            api = Api(oauth_session=oauth_session)
 
             cache = Cache(account_name=account_name)
 

@@ -38,18 +38,38 @@ def prcnt_encd(s: str) -> str:
 
 
 class OAuth1ClientSession(aiohttp.ClientSession):
-    def __init__(self, *args, **kwargs):
-        """ TODO: docstring
-        """
-        self.consumer_key = kwargs.pop("consumer_key")
-        self.consumer_secret = kwargs.pop("consumer_secret")
-        self.access_token = kwargs.pop("access_token")
-        self.access_token_secret = kwargs.pop("access_token_secret")
 
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            consumer_key: str,
+            consumer_secret: str,
+            access_token: str,
+            access_token_secret: str):
+        """ Constructor for OAuth1ClientSession class.
+
+        Args:
+            consumer_key (str): Account consumer key.
+            consumer_secret (str): Account consumer secret key.
+            access_token (str): Account access token.
+            access_token_secret (str): Account access token secret.
+        """
+
+        self.consumer_key = consumer_key
+        self.consumer_secret = consumer_secret
+        self.access_token = access_token
+        self.access_token_secret = access_token_secret
+
+        super().__init__()
 
     async def _request(self, *args: tuple, **kwargs: dict) -> aiohttp.ClientResponse:
-        """ TODO: docstring
+        """ Async method for making OAuth 1.0 request.
+
+        Args:
+            args (tuple): Positional arguments.
+            kwargs (dict): Key-word arguments.
+        
+        Returns:
+            obj: aiohttp.ClientResponse: Returned response object.
         """
 
         method: str = kwargs.get("method", args[0])
@@ -75,7 +95,18 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         return response
     
     def __generate_auth_header(self, method: str, url: str, request_params: Optional[dict] = None) -> str:
-        """ TODO: docstring
+        """ Use given arguments, `method`, `url`, and `request_params`, along with the account credentials, to generate an OAuth 1.0 header str.
+
+        API Reference:
+            https://developer.twitter.com/en/docs/authentication/oauth-1-0a/authorizing-a-request
+
+        Args:
+            method (str): Request method type.
+            url (str): URL request is being made to.
+            request_parameters (dict | None, default = None): Parameters sent along with request.
+        
+        Returns:
+            str: OAuth header string.
         """
 
         oauth_params = {
@@ -86,6 +117,7 @@ class OAuth1ClientSession(aiohttp.ClientSession):
             "oauth_token": self.access_token,
             "oauth_version": "1.0",
         }
+
         oauth_params["oauth_signature"] = self.__generate_signature(method, url, oauth_params, request_params)
 
         auth_header = []
@@ -96,8 +128,19 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         return f"OAuth {', '.join(auth_header)}"
     
     def __generate_signature(self, method: str, url: str, oauth_params: dict, request_params: Optional[dict] = None) -> str:
-        """ TODO: docstring
+        """ Create base64-encoded HMAC-SHA1 signature string from given arguments.
+
+        API Reference:
             https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
+        
+        Args:
+            method (str): Request method type.
+            url (str): URL request is being made to.
+            oauth_params (dict[str, str]): OAuth parameters.
+            request_parameters (dict | None, default = None): Parameters sent along with request.
+        
+        Returns:
+            str: Base64-encoded HMAC-SHA1 signature string.
         """
 
         parameter_string = self.__create_parameter_string(oauth_params, request_params)
@@ -107,7 +150,17 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         return b2a_base64(hmac.digest(), newline=False).decode()
     
     def __create_parameter_string(self, oauth_params: dict, request_params: Optional[dict] = None) -> str:
-        """ TODO: docstring
+        """ Create percent-encoded, ampersand-deliminated parameter string from key, value pairs in given arguments.
+
+        API Reference:
+            https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
+        
+        Args:
+            oauth_params (dict[str, str]): OAuth parameters.
+            request_parameters (dict | None, default = None): Parameters sent along with request.
+        
+        Return:
+            str: Percent-encoded, ampersand-deliminated parameter string.
         """
 
         if request_params is None:
@@ -123,13 +176,30 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         return "&".join(parameter_string)
 
     def __create_signature_base_string(self, method: str, url: str, parameter_string: str) -> str:
-        """ TODO: docstring
+        """ Create percent-encoded, ampersand-deliminated signature base string from given arguments.
+
+        API Reference:
+            https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
+
+        Args:
+            method (str): Request method type.
+            url (str): URL request is being made to.
+            parameter_string (str): Return value of `__create_parameter_string`.
+        
+        Returns:
+            str: Percent-encoded, ampersand-deliminated signature base string.
         """
 
         return "&".join([method.upper(), prcnt_encd(url), prcnt_encd(parameter_string)])
     
     def __generate_nonce(self) -> str:
-        """ Generate a 32 character, strictly alpha-numeric string.
+        """ Generate a random 32 character, strictly alpha-numeric string.
+
+        API Reference:
+            https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
+
+        Returns:
+            str: 32 character nonce.
         """
 
         random.seed(time())
