@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 import logging.config
@@ -12,10 +13,9 @@ from twitterpi.api import Api
 from twitterpi.cache import Cache
 from typing import Any
 
-CONF_PATH = Path(__file__).parent / "conf"
-CREDS_PATH = CONF_PATH / "credentials.toml"
-SETTINGS_PATH = CONF_PATH / "settings.toml"
-LOGGING_CONFIG_PATH = CONF_PATH / "logging.conf"
+CONF_DIR = Path(__file__).parent / "conf"
+CREDS_PATH = CONF_DIR / "credentials.toml"
+SETTINGS_PATH = CONF_DIR / "settings.toml"
 LOG_PATH = Path(__file__).parent / "logs" / "twitterpi.log"
 
 
@@ -73,6 +73,7 @@ class TwitterBot:
                 access_token=creds["access_token"],
                 access_token_secret=creds["access_token_secret"],
             )
+
             cache = Cache(account_name=account_name)
 
             account = Account(
@@ -86,17 +87,21 @@ class TwitterBot:
             accounts.append(account)
         return accounts
 
-    def setup_logging(self, logging_level: int = logging.INFO):
-        """ TODO: docstring
+    def setup_logging(self, log_path: Path, log_level: str):
+        """ Instantiate the logging for the application.
+
+        Args:
+            log_ath (obj: Path): Path to output log file.
+            log_level (str): Desired log level.
         """
 
-        if not LOG_PATH.parent.exists():
-            LOG_PATH.parent.mkdir(parents=True)
+        if not log_path.parent.exists():
+            log_path.parent.mkdir(parents=True)
 
         logging.basicConfig(
-            level=logging_level,
+            level=log_level,
             format="[%(asctime)s : %(levelname)s] [%(name)s] %(message)s",
-            filename=LOG_PATH,
+            filename=log_path,
             filemode="a+",
         )
 
@@ -105,12 +110,12 @@ class TwitterBot:
         handlers: list[logging.handler] = []
 
         stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging_level)
+        stream_handler.setLevel(log_level)
         stream_handler.setFormatter(formatter)
         handlers.append(stream_handler)
 
-        file_handler = RotatingFileHandler(LOG_PATH, "a+", 1024 * 1024, 30)
-        file_handler.setLevel(logging_level)
+        file_handler = RotatingFileHandler(log_path, "a+", 1024 * 1024, 30)
+        file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)
         handlers.append(file_handler)
 
@@ -132,15 +137,35 @@ class TwitterBot:
             loop.run_until_complete(asyncio.gather(*[account.start() for account in accounts]))
 
 
-def main():
-    """ Instantiate the Account objects from credentials file, load comment stubs, and start asyncio loop.
+def main(creds_path: Path, settings_path: Path, log_path: Path, log_level: str):
+    """ Load the account info from the given `creds_path` and `settings_path` arguments, setup the logging, and start the bots.
+
+    Args:
+        creds_path (obj: Path): Path to account credentials file.
+        settings_path (obj: Path): Path to account settings file.
+        log_path (obj: Path): Path to output log file.
+        log_level (str): Desired log level.
     """
 
     bot = TwitterBot()
-    bot.setup_logging()
-    accounts = bot.load_accounts(CREDS_PATH, SETTINGS_PATH)
+    bot.setup_logging(log_path, log_level)
+    accounts = bot.load_accounts(creds_path, settings_path)
     bot.run(accounts)
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(description="Twitter Giveaway Bot")
+    parser.add_argument("-c", "--creds-path", type=Path, dest="creds_path", default=CREDS_PATH, help="Path to account credentials file.")
+    parser.add_argument("-s", "--settings-path", type=Path, dest="settings_path", default=SETTINGS_PATH, help="Path to account settings file.")
+    parser.add_argument("-o", "--log-path", type=Path, dest="log_path", default=LOG_PATH, help="Path to output log file.")
+    parser.add_argument("-l", "--log-level", type=str, dest="log_level", default="INFO", choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), help="Desired log level.")
+
+    args = parser.parse_args()
+
+    main(
+        creds_path=args.creds_path,
+        settings_path=args.settings_path,
+        log_path=args.log_path,
+        log_level=args.log_level,
+    )
