@@ -16,9 +16,15 @@ class Tweet:
     author: User
     mentions: list[User] = field(default_factory=list)
 
-    @validator('created_at', pre=True)
-    def parse_datetime(cls, v: str) -> datetime:
-        """ TODO: docstring
+    @validator("created_at", pre=True)
+    def parse_twitter_datetime(cls, value: str) -> datetime:
+        """ Parse given `value` as a Twitter datatime.
+
+        Args:
+            value (str): Datetime string to parse.
+        
+        Returns:
+            obj: datetime
         """
 
-        return datetime.strptime(v, _twitter_datetime_format)
+        return datetime.strptime(value, _twitter_datetime_format)
