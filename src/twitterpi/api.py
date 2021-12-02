@@ -31,7 +31,13 @@ class Api:
             consumer_secret: str,
             access_token: str,
             access_token_secret: str):
-        """ TODO: docstring
+        """ Constructor for Api class.
+
+        Args:
+            consumer_key (str): Account consumer key.
+            consumer_secret (str): Account consumer secret key.
+            access_token (str): Account access token.
+            access_token_secret (str): Account access token secret.
         """
 
         self.logger = logging.getLogger(__name__)
@@ -44,8 +50,16 @@ class Api:
 
     @SEARCH_LIMITER.acquire
     async def get_tweets(self, search_term: str) -> list[Tweet]:
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/api-reference/get-search-tweets
+        """ Get 50 tweets matching given `search_term`.
+
+        API reference:
+            https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/api-reference/get-search-tweets
+        
+        Args:
+            search_term (str): Search for tweets containing this term.
+        
+        Return:
+            list[obj: Tweet]: Tweet objects returned from API.
         """
 
         self.logger.info(f"Searching tweets [Search Term: {search_term}] ...")
@@ -98,8 +112,13 @@ class Api:
     
     @FAVORITE_LIMITER.acquire
     async def favorite_tweet(self, tweet_id: int):
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-favorites-create
+        """ Favorite Tweet from given `tweet_id`.
+
+        API Reference:
+            https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-favorites-create
+        
+        Args:
+            tweet_id (int): Id of Tweet to favorite.
         """
 
         params = {
@@ -129,8 +148,13 @@ class Api:
     
     @FOLLOW_LIMITER.acquire
     async def follow_user(self, user: User):
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
+        """ Follow User from given `user` object.
+
+        API Reference:
+            https://develper.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
+        
+        Args:
+            user (obj: User): User to follow.
         """
 
         params = {
@@ -162,8 +186,13 @@ class Api:
 
     @RETWEET_LIMITER.acquire
     async def retweet(self, tweet_id: int):
-        """ TODO: docstring
-        https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-retweet-id
+        """ Retweet Tweet at given `tweet_id`.
+
+        API Reference:
+            https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-retweet-id
+        
+        Args:
+            tweet_id (int): Tweet Id to retweet.
         """
 
         self.logger.info(f"Retweeting [TweetId: {tweet_id}] ...")
