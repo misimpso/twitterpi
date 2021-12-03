@@ -35,6 +35,12 @@ class Api:
         self.logger = logging.getLogger(__name__)
         self.oauth_session = oauth_session
 
+    def __del__(self):
+        """ Deconstructor of Api class.
+        """
+
+        self.oauth_session.close()
+
     @SEARCH_LIMITER.acquire
     async def get_tweets(self, search_term: str) -> list[Tweet]:
         """ Get 50 tweets matching given `search_term`.
@@ -65,8 +71,11 @@ class Api:
         tweets: list[Tweet] = []
         try:
             async with self.oauth_session.get(URLS["search"], params=params, data=data) as response:
+                response_json: dict = await response.json()
+                if response.status == 400:
+                    self.logger.error(response_json)
+
                 response.raise_for_status()
-                response_json = await response.json()
                 for tweet in response_json["statuses"]:
 
                     if tweet["in_reply_to_status_id"] != None:
