@@ -39,8 +39,6 @@ def read_toml(file_path: Path) -> dict[str, Any]:
 class TwitterBot:
     """ Main class for kicking off the Twitter bot accounts.
     """
-    
-    logger = logging.getLogger(__name__)
 
     def load_accounts(self, creds_path: Path, settings_path: Path) -> list[Account]:
         """ Read account credentials from given `creds_path` and instantiate Api, Cache, and Account objects.
@@ -101,15 +99,18 @@ class TwitterBot:
         if not log_path.parent.exists():
             log_path.parent.mkdir(parents=True)
 
+        format_string = "%(asctime)s : %(levelname)s │ [%(name)s] %(message)s"
+
         logging.basicConfig(
             level=log_level,
-            format="[%(asctime)s : %(levelname)s] [%(name)s] %(message)s",
+            format=format_string,
             filename=log_path,
             filemode="a+",
         )
 
-        formatter = logging.Formatter("[%(asctime)s : %(levelname)s] [%(name)s] %(message)s")
+        formatter = logging.Formatter(format_string)
 
+        logging.getLogger().handlers.clear()
         handlers: list[logging.handler] = []
 
         stream_handler = logging.StreamHandler()
@@ -136,8 +137,17 @@ class TwitterBot:
             accounts (list[obj: Account]): List of instantiated Account objects.
         """
 
+        logger = logging.getLogger(__name__)
+
         with closing(asyncio.get_event_loop()) as loop:
-            loop.run_until_complete(asyncio.gather(*[account.start() for account in accounts]))
+            tasks = asyncio.gather(*[account.start() for account in accounts])
+            try:
+                loop.run_until_complete(tasks)
+            except KeyboardInterrupt:
+                logger.info("Caught keyboard interupt, cleaning up.")
+                tasks.cancel()
+                loop.run_forever()
+                tasks.exception()
 
 
 def main():
