@@ -17,7 +17,6 @@ class Limiter:
             requests_per_day (int): Number of requests allowed per day.
         """
 
-        self.logger = logging.getLogger(name)
         self.requests_per_day = requests_per_day
         self._last_call_time = 0
         self.seconds_per_request = SECONDS_IN_A_DAY / requests_per_day
@@ -38,10 +37,14 @@ class Limiter:
                 Return value of awaited `func`.
             """
 
+            # Re-use the wrapped class object's logger instance variable
+            # Hack to not need to instantiate a new logger
+            logger = args[0].logger
+
             current_time = perf_counter()
             sleep_time = self.seconds_per_request - (current_time - self._last_call_time)
             if sleep_time > 0:
-                self.logger.info(f"Sleeping for [{sleep_time:.2f}] seconds.")
+                logger.info(f"Sleeping for [{sleep_time:.2f}] seconds.")
                 await sleep(sleep_time)
             self._last_call_time = perf_counter()
             return await func(*args, **kwargs)
