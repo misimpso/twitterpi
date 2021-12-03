@@ -73,12 +73,12 @@ class TwitterBot:
                 access_token_secret=creds["access_token_secret"],
             )
 
-            api = Api(oauth_session=oauth_session)
+            api = Api(account_name=account_name, oauth_session=oauth_session)
 
             cache = Cache(account_name=account_name)
 
             account = Account(
-                screen_name=account_name,
+                account_name=account_name,
                 api=api,
                 cache=cache,
                 search_terms=settings["search_terms"],
@@ -99,7 +99,7 @@ class TwitterBot:
         if not log_path.parent.exists():
             log_path.parent.mkdir(parents=True)
 
-        format_string = "%(asctime)s : %(levelname)s │ [%(name)s] %(message)s"
+        format_string = "%(asctime)s : %(levelname)s │ [%(account_name)s] [%(name)s] %(message)s"
 
         logging.basicConfig(
             level=log_level,

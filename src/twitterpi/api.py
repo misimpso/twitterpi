@@ -25,14 +25,15 @@ RETWEET_LIMITER = Limiter("retweet", requests_per_day=1200)
 
 
 class Api:
-    def __init__(self, oauth_session: OAuth1ClientSession):
+    def __init__(self, account_name: str, oauth_session: OAuth1ClientSession):
         """ Constructor for Api class.
 
         Args:
             oauth_session (obj: OAuth1ClientSession): OAuth session class with credentials.
         """
 
-        self.logger = logging.getLogger(__name__)
+        logger: logging.Logger = logging.getLogger(__name__)
+        self.logger = logging.LoggerAdapter(logger, extra={"account_name": account_name})
         self.oauth_session = oauth_session
 
     def __del__(self):

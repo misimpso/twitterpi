@@ -9,20 +9,21 @@ from typing import Optional
 
 
 class Account:
-    def __init__(self, screen_name: str, api: Api, cache: Cache, search_terms: list[str], filter_terms: list[str]):
+    def __init__(self, account_name: str, api: Api, cache: Cache, search_terms: list[str], filter_terms: list[str]):
         """ Main controller for account interaction.
 
         Args:
-            screen_name (str): Account screen name (from credentials.toml).
+            account_name (str): Account screen name (from credentials.toml).
             api (obj: Api): Api object with consumer / secret keys already setup.
             cache (obj: Cache): Cache object for storing / referencing tweets.
             search_terms (list[str]): List of search terms.
             filter_terms (list[str]): List of filter terms to append to each search term.
         """
 
-        self.logger: logging.Logger = logging.getLogger(screen_name)
+        logger: logging.Logger = logging.getLogger(__name__)
+        self.logger = logging.LoggerAdapter(logger, extra={"account_name": account_name})
 
-        self.screen_name: str = screen_name
+        self.account_name: str = account_name
         self.api: Api = api
         self.cache: Cache = cache
 
