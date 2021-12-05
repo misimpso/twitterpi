@@ -1,5 +1,3 @@
-import logging
-
 from asyncio import sleep
 from time import perf_counter
 from typing import Any, Callable, Coroutine
@@ -23,11 +21,18 @@ class Limiter:
     
     def acquire(self, func: Coroutine) -> Callable:
         """ Decorator method to rate-limit given awaitable method `func`.
+        
+            Calculate any required sleep time between current time, last call time, and the requests per day.
+
+        Args:
+            func (Coroutine): Wrapped awaitable function.
+        
+        Returns:
+            Coroutine: Wrapper method which calls given `func` after sleeping if needed.
         """
 
         async def wrapper(*args, **kwargs) -> Any:
-            """ Calculate any required sleep time between current time, last call time, and the requests per day.
-                Call wrapped async, `func` with given `args` and `kwargs` and return result.
+            """ Sleep if needed, call wrapped awaitable `func` with given `args` and `kwargs`, and return result.
             
             Args:
                 *args(tuple): Args to give to wrapped `func`.
@@ -37,7 +42,7 @@ class Limiter:
                 Return value of awaited `func`.
             """
 
-            # Re-use the wrapped class object's logger instance variable
+            # Re-use the wrapped object's logger instance variable.
             # Hack to not need to instantiate a new logger
             logger = args[0].logger
 
