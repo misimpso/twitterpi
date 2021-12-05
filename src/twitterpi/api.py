@@ -20,10 +20,10 @@ URLS = {
     "get_user_tweets": f"{BASE_URL}statuses/user_timeline.json",
 }
 
-SEARCH_LIMITER = Limiter("search", requests_per_day=17280)
-FAVORITE_LIMITER = Limiter("favorite", requests_per_day=1000)
-FOLLOW_LIMITER = Limiter("follower", requests_per_day=400)
-RETWEET_LIMITER = Limiter("retweet", requests_per_day=1200)
+SEARCH_LIMITER = Limiter(requests_per_day=17280)
+FAVORITE_LIMITER = Limiter(requests_per_day=1000)
+FOLLOW_LIMITER = Limiter(requests_per_day=400)
+RETWEET_LIMITER = Limiter(requests_per_day=1200)
 
 
 class Api:
@@ -50,10 +50,10 @@ class Api:
 
         API reference:
             https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/api-reference/get-search-tweets
-        
+
         Args:
             search_term (str): Search for tweets containing this term.
-        
+
         Return:
             list[obj: Tweet]: Tweet objects returned from API.
         """
@@ -77,12 +77,11 @@ class Api:
                 response_json = {}
                 try:
                     response_json: dict = await response.json()
-                except ContentTypeError as e:
+                except ContentTypeError:
                     response_text: str = await response.text()
-                    self.logger.exception("ContentTypeError from response.")
-                    self.logger.exception(response_text)
-
-
+                    self.logger.error("ContentTypeError from response.")
+                    self.logger.error(response_text)
+                    self.logger.error(response)
 
                 # if response.status >= 400:
                 #     try:
@@ -92,16 +91,16 @@ class Api:
                 #         response_text: str = await response.text()
                 #         self.logger.exception("ContentTypeError from response.")
                 #         self.logger.exception(response_text)
-                #         raise e              
+                #         raise e
 
                 response.raise_for_status()
                 for tweet in response_json.get("statuses", []):
 
-                    if tweet["in_reply_to_status_id"] != None:
+                    if tweet["in_reply_to_status_id"] is not None:
                         continue
-                    if tweet["in_reply_to_user_id"] != None:
+                    if tweet["in_reply_to_user_id"] is not None:
                         continue
-                    if tweet["in_reply_to_screen_name"] != None:
+                    if tweet["in_reply_to_screen_name"] is not None:
                         continue
 
                     author = User(id=tweet["user"]["id"], screen_name=tweet["user"]["screen_name"])
@@ -118,19 +117,19 @@ class Api:
                             mentions=mentions,
                         ))
         except Exception as e:
-            self.logger.exception(f"Unexpected exception [get_tweets]")
+            self.logger.exception("Unexpected exception [get_tweets]")
             raise e
 
         self.logger.info(f"Received [{len(tweets)}] Tweets!")
         return tweets
-    
+
     @FAVORITE_LIMITER.acquire
     async def favorite_tweet(self, tweet_id: int):
         """ Favorite Tweet from given `tweet_id`.
 
         API Reference:
             https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-favorites-create
-        
+
         Args:
             tweet_id (int): Id of Tweet to favorite.
         """
@@ -156,16 +155,16 @@ class Api:
                 response.raise_for_status()
             self.logger.info("Tweet favorited!")
         except Exception as e:
-            self.logger.exception(f"Unexpected exception [favorite_tweet]")
+            self.logger.exception("Unexpected exception [favorite_tweet]")
             raise e
-    
+
     @FOLLOW_LIMITER.acquire
     async def follow_user(self, user: User):
         """ Follow User from given `user` object.
 
         API Reference:
             https://develper.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
-        
+
         Args:
             user (obj: User): User to follow.
         """
@@ -193,7 +192,7 @@ class Api:
                 response.raise_for_status()
             self.logger.info("User followed!")
         except Exception as e:
-            self.logger.exception(f"Unexpected exception [follow_user]")
+            self.logger.exception("Unexpected exception [follow_user]")
             raise e
 
     @RETWEET_LIMITER.acquire
@@ -202,7 +201,7 @@ class Api:
 
         API Reference:
             https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-retweet-id
-        
+
         Args:
             tweet_id (int): Tweet Id to retweet.
         """
@@ -224,9 +223,8 @@ class Api:
                 response.raise_for_status()
             self.logger.info("Tweet retweeted!")
         except Exception as e:
-            self.logger.exception(f"Unexpected exception [retweet]")
+            self.logger.exception("Unexpected exception [retweet]")
             raise e
-
 
 # DEMO METHODS
     async def tweet(self, text: str):
@@ -250,7 +248,7 @@ class Api:
                 print(response_json)
             response.raise_for_status()
         print("Tweet made!")
-    
+
     async def get_tweet_by_id(self, id: int):
         """ TODO: docstring
         https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-update

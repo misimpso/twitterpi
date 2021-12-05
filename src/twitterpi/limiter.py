@@ -7,37 +7,36 @@ SECONDS_IN_A_DAY: int = 60 * 60 * 24
 
 
 class Limiter:
-    def __init__(self, name: str, requests_per_day: int):
+    def __init__(self, requests_per_day: int):
         """ Constructor for Limiter class.
 
         Args:
-            name (str): Name of the limiter.
             requests_per_day (int): Number of requests allowed per day.
         """
 
         self.requests_per_day = requests_per_day
         self._last_call_time = 0
         self.seconds_per_request = SECONDS_IN_A_DAY / requests_per_day
-    
+
     def acquire(self, func: Coroutine) -> Callable:
         """ Decorator method to rate-limit given awaitable method `func`.
-        
-            Calculate any required sleep time between current time, last call time, and the requests per day.
+
+        Calculate any required sleep time between current time, last call time, and the requests per day.
 
         Args:
             func (Coroutine): Wrapped awaitable function.
-        
+
         Returns:
             Coroutine: Wrapper method which calls given `func` after sleeping if needed.
         """
 
         async def wrapper(*args, **kwargs) -> Any:
             """ Sleep if needed, call wrapped awaitable `func` with given `args` and `kwargs`, and return result.
-            
+
             Args:
                 *args(tuple): Args to give to wrapped `func`.
                 **kwargs(dict): Keyword arguments to give to wrapped `func`.
-            
+
             Return:
                 Return value of awaited `func`.
             """
