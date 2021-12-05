@@ -5,7 +5,7 @@ VENVPYTHON=$(PYTHONVENV)/bin/python
 PHONY: init
 init:
 	@echo "Creating virtual environment 'venv' for development."
-	python3 -m venv venv
+	python3 -m venv venv || python -m venv venv
 	$(VENVPYTHON) -m pip install --upgrade setuptools pip
 	@echo "\nYou may want to activate the virtual environmnent with 'source venv/bin/activate'\n"
 
@@ -16,6 +16,7 @@ develop:
 
 PHONY: build
 build:
+	flake8 .
 	$(VENVPYTHON) -m pip install build
 	$(VENVPYTHON) -m build
 
@@ -33,14 +34,10 @@ PHONY: sparkling
 sparkling: clean
 	rm -rf $(PROJ_BASE)/venv*
 
-PHONY: docs
-docs: clean
-	$(VENVPYTHON) -m pip install --editable .[doc]
-	cd docs && make auto && make html
-
 PHONY: test
 test:
 	rm -f .coverage
 	rm -rf tests/htmlcov
 	find . -name "*_tests.py" | xargs -n1 -t $(VENVPYTHON) -m coverage run -a
 	$(VENVPYTHON) -m coverage html
+	flake8 .
