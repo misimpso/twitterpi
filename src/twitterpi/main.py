@@ -154,7 +154,7 @@ def main():
     """ Load account credentials and settings, setup logging, and start Twitter bots.
     """
 
-    parser = argparse.ArgumentParser(description="Twitter Giveaway Bot")
+    parser = argparse.ArgumentParser(description="Twitter Giveaway Bot", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", "--creds-path", type=Path, dest="creds_path", default=CREDS_PATH, required=False, help="Path to account credentials file.")
     parser.add_argument("-s", "--settings-path", type=Path, dest="settings_path", default=SETTINGS_PATH, required=False, help="Path to account settings file.")
     parser.add_argument("-o", "--log-path", type=Path, dest="log_path", default=LOG_PATH, required=False, help="Path to output log file.")
