@@ -1,7 +1,27 @@
 # twitter_pi
-Async, multi-user Twitter Giveaway Bot for running on Raspberry Pi
+Asynchronous, multi-user Twitter Giveaway Bot.
 
 ## Description
+Python application for interacting with TwitterAPI to operate multiple giveaway bots at once. Account credentials and settings are read from a `credential.toml` and `settings.toml` files respectively. Tweets matching search criteria are saved to and read from disk. Requests use custom async OAuth 1.0 session and custom rate limiter.
+
+## Usage
+``` shell
+$ twitterpi --help
+usage: twitterpi [-h] [-c CREDS_PATH] [-s SETTINGS_PATH] [-o LOG_PATH] [-l {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+
+Twitter Giveaway Bot
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CREDS_PATH, --creds-path CREDS_PATH
+                        Path to account credentials file. (default: /path/to/python/site-packages/twitterpi/conf/credentials.toml)
+  -s SETTINGS_PATH, --settings-path SETTINGS_PATH
+                        Path to account settings file. (default: /path/to/python/site-packages/twitterpi/conf/settings.toml)
+  -o LOG_PATH, --log-path LOG_PATH
+                        Path to output log file. (default: /path/to/python/site-packages/twitterpi/logs/twitterpi.log)
+  -l {DEBUG,INFO,WARNING,ERROR,CRITICAL}, --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Desired log level. (default: INFO)
+```
 
 ## Pre-requisites
 You'll need access to the [Twitter API](https://developer.twitter.com/en/products/twitter-api), and an environment running Python >3.6.
