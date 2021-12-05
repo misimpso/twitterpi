@@ -1,9 +1,11 @@
 import logging
 
-from pprint import pprint
+from aiohttp.client_exceptions import ContentTypeError
 from twitterpi.dto import Tweet, User
 from twitterpi.limiter import Limiter
 from twitterpi.oauth1_client import OAuth1ClientSession
+
+from pprint import pprint
 
 
 BASE_URL = "https://api.twitter.com/1.1/"
@@ -72,12 +74,28 @@ class Api:
         tweets: list[Tweet] = []
         try:
             async with self.oauth_session.get(URLS["search"], params=params, data=data) as response:
-                response_json: dict = await response.json()
-                if response.status == 400:
-                    self.logger.error(response_json)
+                response_json = {}
+                try:
+                    response_json: dict = await response.json()
+                except ContentTypeError as e:
+                    response_text: str = await response.text()
+                    self.logger.exception("ContentTypeError from response.")
+                    self.logger.exception(response_text)
+
+
+
+                # if response.status >= 400:
+                #     try:
+                #         response_json: dict = await response.json()
+                #         self.logger.error(response_json)
+                #     except ContentTypeError as e:
+                #         response_text: str = await response.text()
+                #         self.logger.exception("ContentTypeError from response.")
+                #         self.logger.exception(response_text)
+                #         raise e              
 
                 response.raise_for_status()
-                for tweet in response_json["statuses"]:
+                for tweet in response_json.get("statuses", []):
 
                     if tweet["in_reply_to_status_id"] != None:
                         continue
