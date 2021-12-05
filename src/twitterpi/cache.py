@@ -14,7 +14,15 @@ ENCODER_DICT = {
 
 
 async def anext(gen: AsyncGenerator, default: Any = None) -> Any:
-    """ TODO: docstring
+    """ Helper method for getting next item from given async generator `gen`. Return given `default` value if generator
+        is empty (throws StopAsyncIteration error).
+    
+    Args:
+        gen (obj: AsyncGenerator): Async generator to get item from.
+        default (Any, default = None): Default value to return if generator is empty (throws StopAsyncIteration error).
+    
+    Returns:
+        Any: Returned item from generator or given default value.
     """
 
     v = default
@@ -27,7 +35,12 @@ async def anext(gen: AsyncGenerator, default: Any = None) -> Any:
 
 class Cache:
     def __init__(self, account_name: str):
-        """ TODO: docstring
+        """ Constructor for Cache class.
+
+        Create folders for `new_tweets` and `seen` tweets for given `account_name`.
+
+        Args:
+            account_name (str): Name of the account which cache dirs will be based off of.
         """
 
         base_dir: Path = Path(__file__).parent / "cache"
@@ -38,7 +51,10 @@ class Cache:
 
     # QUERIES ---
     async def get_tweet(self) -> Optional[Tweet]:
-        """ TODO: docstring
+        """ Get a tweet from the new tweets directory.
+
+        Return:
+            (obj: Tweet | None): Tweet retrieved from directory.
         """
 
         tweet = None
@@ -52,7 +68,10 @@ class Cache:
         return tweet
 
     async def check_tweet_seen(self, tweet: Tweet) -> bool:
-        """ TODO: docstring
+        """ Check if given `tweet` object has been seen before.
+
+        Return:
+            bool: Flag whether tweet exists.
         """
 
         tweet_path: AsyncPath = self.seen_dir / f"{tweet.id}.json"
@@ -60,7 +79,10 @@ class Cache:
 
     # INSERTIONS ---
     async def insert_new_tweets(self, tweets: list[Tweet]):
-        """ TODO: docstring
+        """ Insert given list of `tweets` into the new tweets directory.
+
+        Args:
+            tweets (list[obj: Tweet]): List of Tweet objects to insert.
         """
 
         for tweet in tweets:
@@ -69,7 +91,10 @@ class Cache:
             await tweet_path.write_text(tweet_json)
 
     async def insert_seen_tweet(self, tweet: Tweet):
-        """ TODO: docstring
+        """ Insert file for given `tweet` into the seen tweets directory.
+
+        Args:
+            tweet (obj: Tweet): Tweet that has been interacted with and is no-longer new.
         """
 
         seen_path: AsyncPath = self.seen_dir / f"{tweet.id}.json"
@@ -77,7 +102,10 @@ class Cache:
 
     # DELETIONS ---
     async def remove_new_tweet(self, tweet: Tweet):
-        """ TODO: docstring
+        """ Remove given `tweet` from new tweets directory.
+
+        Args:
+            tweet (obj: Tweet): Tweet that is no-longer new.
         """
 
         tweet_path: AsyncPath = self.new_tweets_dir / f"{tweet.id}.json"
