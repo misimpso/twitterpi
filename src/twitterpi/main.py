@@ -21,19 +21,19 @@ LOG_PATH = Path(__file__).parent / "logs" / "twitterpi.log"
 
 
 def read_toml(file_path: Path) -> dict[str, Any]:
-        """ Utility method to read and return contents of .toml file from given `file_path`.
+    """ Utility method to read and return contents of .toml file from given `file_path`.
 
-        Args:
-            file_path (obj: Path): File path to read from.
-        
-        Returns:
-            dict[str, Any]: Dictionary of file contents.
-        """
+    Args:
+        file_path (obj: Path): File path to read from.
 
-        contents: dict[str, Any] = {}
-        with file_path.open("r") as f:
-            contents: dict[str, Any] = toml.load(f)
-        return contents
+    Returns:
+        dict[str, Any]: Dictionary of file contents.
+    """
+
+    contents: dict[str, Any] = {}
+    with file_path.open("r") as f:
+        contents: dict[str, Any] = toml.load(f)
+    return contents
 
 
 class TwitterBot:
@@ -46,7 +46,7 @@ class TwitterBot:
         Args:
             creds_path (obj: Path): Path of account credentials file.
             settings_path (obj: Path): Path of account settings file.
-        
+
         Returns:
             list[obj: Account]: List of Account objects.
         """
@@ -129,7 +129,7 @@ class TwitterBot:
 
         listener = QueueListener(queue, *handlers, respect_handler_level=True)
         listener.start()
-    
+
     def run(self, accounts: list[Account]):
         """ Kickstart asyncio loop with each account from given `accounts` argument.
 
@@ -154,11 +154,14 @@ def main():
     """ Load account credentials and settings, setup logging, and start Twitter bots.
     """
 
-    parser = argparse.ArgumentParser(description="Twitter Giveaway Bot", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-c", "--creds-path", type=Path, dest="creds_path", default=CREDS_PATH, required=False, help="Path to account credentials file.")
-    parser.add_argument("-s", "--settings-path", type=Path, dest="settings_path", default=SETTINGS_PATH, required=False, help="Path to account settings file.")
-    parser.add_argument("-o", "--log-path", type=Path, dest="log_path", default=LOG_PATH, required=False, help="Path to output log file.")
-    parser.add_argument("-l", "--log-level", type=str, dest="log_level", default="INFO", choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), required=False, help="Desired log level.")
+    parser = argparse.ArgumentParser(
+        description="Twitter Giveaway Bot",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-c", "--creds-path", type=Path, dest="creds_path", default=CREDS_PATH, required=False, help="Path to account credentials file.")  # noqa: E501
+    parser.add_argument("-s", "--settings-path", type=Path, dest="settings_path", default=SETTINGS_PATH, required=False, help="Path to account settings file.")  # noqa: E501
+    parser.add_argument("-o", "--log-path", type=Path, dest="log_path", default=LOG_PATH, required=False, help="Path to output log file.")  # noqa: E501
+    parser.add_argument("-l", "--log-level", type=str, dest="log_level", default="INFO", choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), required=False, help="Desired log level.")  # noqa: E501
 
     args = parser.parse_args()
 

@@ -16,11 +16,11 @@ ENCODER_DICT = {
 async def anext(gen: AsyncGenerator, default: Any = None) -> Any:
     """ Helper method for getting next item from given async generator `gen`. Return given `default` value if generator
         is empty (throws StopAsyncIteration error).
-    
+
     Args:
         gen (obj: AsyncGenerator): Async generator to get item from.
         default (Any, default = None): Default value to return if generator is empty (throws StopAsyncIteration error).
-    
+
     Returns:
         Any: Returned item from generator or given default value.
     """
@@ -64,7 +64,7 @@ class Cache:
             contents: str = await tweet_path.read_text()
             content_dict = json.loads(contents)
             tweet = Tweet(**content_dict)
-        
+
         return tweet
 
     async def check_tweet_seen(self, tweet: Tweet) -> bool:

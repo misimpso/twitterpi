@@ -32,7 +32,7 @@ class Account:
             f"{search_term} {' '.join([f'-filter:{filter_term}' for filter_term in filter_terms])}".strip()
             for search_term in search_terms
         ]
-    
+
     async def start(self):
         """ Main loop for getting and interacting with tweets.
         """
@@ -49,13 +49,13 @@ class Account:
             await self.cache.insert_seen_tweet(tweet)
 
             await sleep(5.0)
-    
+
     async def parse(self, tweet_text: str) -> Directive:
         """ Parse given `tweet_text` and generate a `Directive` object from text contents.
 
         Args:
             tweet_text (str): String of tweet text.
-        
+
         Returns:
             (obj: Directive)
         """
@@ -67,19 +67,19 @@ class Account:
             if keyword in tweet_text:
                 directive.retweet = True
                 break
-        
+
         for keyword in ("favorite", "favourite", "fav", "like"):
             if keyword in tweet_text:
                 directive.favorite = True
                 break
-        
+
         for keyword in ("flw", "follow"):
             if keyword in tweet_text:
                 directive.follow = True
                 break
 
         return directive
-    
+
     async def interact(self, tweet: Tweet):
         """ Interact with given `tweet` based on its text contents.
 
@@ -90,7 +90,7 @@ class Account:
         actions: list[tuple] = []
         directive: Directive = await self.parse(tweet.text)
 
-        self.logger.info(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")        
+        self.logger.info(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")
         for line in tweet.text.split("\n"):
             self.logger.info(f" │ {line}")
         self.logger.info(f" └─────── {directive}")
@@ -98,7 +98,7 @@ class Account:
         if not ((directive.retweet and directive.follow) or (directive.retweet and directive.favorite)):
             self.logger.info("Not enough directives to act upon.")
             return
-        
+
         if directive.retweet:
             actions.append((self.api.retweet, {"tweet_id": tweet.id}))
 
@@ -115,17 +115,17 @@ class Account:
             return
 
         random.shuffle(actions)
-        
+
         for action in actions:
             endpoint, kwargs = action
             await endpoint(**kwargs)
-        
+
         self.logger.info("Tweet interacted!")
 
     async def get_tweet(self) -> Optional[Tweet]:
         """ Get a tweet to interact with. If tweets don't exist in cache,
             get tweets from API and populate the cache.
-        
+
         Returns:
             (obj: Tweet | None): A tweet to interact with or None.
         """

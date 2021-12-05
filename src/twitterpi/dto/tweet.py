@@ -22,7 +22,7 @@ class Tweet:
 
         Args:
             value (str): Datetime string to parse.
-        
+
         Returns:
             obj: datetime
         """

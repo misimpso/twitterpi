@@ -167,7 +167,7 @@ class Api:
 
         Args:
             user (obj: User): User to follow.
-        """
+        """  # noqa: E501
 
         params = {
             "user_id": str(user.id),
