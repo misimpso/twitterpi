@@ -1,6 +1,8 @@
 # twitter_pi
 Asynchronous, multi-user Twitter Giveaway Bot.
 
+[![Tests](https://github.com/misimpso/twitterpi/actions/workflows/test.yml/badge.svg)](https://github.com/misimpso/twitterpi/actions/workflows/test.yml)
+
 ## Description
 Python application for interacting with TwitterAPI to operate multiple giveaway bots at once. Account credentials and settings are read from a `credential.toml` and `settings.toml` files respectively. Tweets matching search criteria are saved to and read from disk. Requests use custom async OAuth 1.0 session and custom rate limiter.
 
