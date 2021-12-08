@@ -3,6 +3,8 @@ import random
 import string
 import urllib
 
+from aiohttp import ClientSession
+from contextlib import asynccontextmanager
 from binascii import b2a_base64
 from hashlib import sha1
 from hmac import HMAC
@@ -38,7 +40,7 @@ def prcnt_encd(s: str) -> str:
     return urllib.parse.quote(s, safe="")
 
 
-class OAuth1ClientSession(aiohttp.ClientSession):
+class OAuth1ClientSession:
 
     def __init__(
             self,
@@ -60,9 +62,24 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         self.access_token = access_token
         self.access_token_secret = access_token_secret
 
-        super().__init__()
+    @asynccontextmanager
+    async def get(self, url: str, params: dict = None, data: dict = None):
+        """ TODO: docstring
+        """
 
-    async def _request(self, *args: tuple, **kwargs: dict) -> aiohttp.ClientResponse:
+        async with self._request(method="GET", url=url, params=params, data=data) as response:
+            yield response
+
+    @asynccontextmanager
+    async def post(self, url: str, params: dict = None, data: dict = None):
+        """ TODO: docstring
+        """
+
+        async with self._request(method="POST", url=url, params=params, data=data) as response:
+            yield response
+
+    @asynccontextmanager
+    async def _request(self, method: str, url: str, params: dict = None, data: dict = None):
         """ Async method for making OAuth 1.0 request.
 
         Args:
@@ -72,11 +89,6 @@ class OAuth1ClientSession(aiohttp.ClientSession):
         Returns:
             obj: aiohttp.ClientResponse: Returned response object.
         """
-
-        method: str = kwargs.get("method", args[0])
-        url: str = str(kwargs.get("str_or_url", args[1]))
-        params: Optional[dict] = kwargs.get("params", None)
-        data: Optional[dict] = kwargs.get("data", None)
 
         all_parameters = {}
         if params:
@@ -89,11 +101,10 @@ class OAuth1ClientSession(aiohttp.ClientSession):
             "User-Agent": "OAuth gem v0.4.4",
             "Content-Type": "application/x-www-form-urlencoded",
         }
-        existing_headers = kwargs.pop("headers", {})
-        existing_headers.update(auth_header)
 
-        response = await super()._request(headers=existing_headers, *args, **kwargs)
-        return response
+        async with ClientSession() as client:
+            async with client.request(method, url, params=params, data=data, headers=auth_header) as response:
+                yield response
 
     def __generate_auth_header(self, method: str, url: str, request_params: Optional[dict] = None) -> str:
         """ Use given arguments, `method`, `url`, and `request_params`, along with the account credentials, to generate

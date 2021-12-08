@@ -38,12 +38,6 @@ class Api:
         self.logger = logging.LoggerAdapter(logger, extra={"account_name": account_name})
         self.oauth_session = oauth_session
 
-    def __del__(self):
-        """ Deconstructor of Api class.
-        """
-
-        self.oauth_session.close()
-
     @SEARCH_LIMITER.acquire
     async def get_tweets(self, search_term: str) -> list[Tweet]:
         """ Get 50 tweets matching given `search_term`.
