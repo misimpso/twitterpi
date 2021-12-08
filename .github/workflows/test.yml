@@ -24,5 +24,3 @@ jobs:
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox
-    - name: Codacy Coverage Reporter
-      uses: codacy/codacy-coverage-reporter-action@v1.1.0
