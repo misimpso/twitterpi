@@ -39,5 +39,6 @@ test:
 	rm -f .coverage
 	rm -rf tests/htmlcov
 	find . -name "*_tests.py" | xargs -n1 -t $(VENVPYTHON) -m coverage run -a
-	$(VENVPYTHON) -m coverage html
+	$(VENVPYTHON) -m coverage report
+	$(VENVPYTHON) -m coverage xml -o cobertura.xml
 	flake8 .
