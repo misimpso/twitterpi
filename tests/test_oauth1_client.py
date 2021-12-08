@@ -55,10 +55,11 @@ AUTH_HEADER = (
     'oauth_version="1.0"'
 )
 
+
 class PercentEncodeTests(unittest.TestCase):
 
-     def test_prcnt_encd__verify_return_values(self):
-        """ TODO: docstring
+    def test_prcnt_encd__verify_return_values(self):
+        """ Verify `prcnt_encd` returns expected results.
         """
 
         input_output = [
@@ -88,9 +89,9 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
             session._OAuth1ClientSession__generate_nonce = Mock(return_value=nonce)
             session._OAuth1ClientSession__generate_signature = Mock(return_value=SIGNATURE)
             actual_auth_header = session._OAuth1ClientSession__generate_auth_header(METHOD, URL, REQUEST_PARAMS)
-    
+
         self.assertEqual(actual_auth_header, AUTH_HEADER)
-    
+
     @patch.object(aiohttp, "ClientSession", Mock(spec=aiohttp.ClientSession))
     async def test___generate_signature__verify_return_value(self):
         """ Verify `__generate_signature` returns expected signature string.
@@ -108,14 +109,20 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
         async with OAuth1ClientSession(**KEY_RING) as session:
             session._OAuth1ClientSession__create_parameter_string = Mock(return_value=PARAMETER_STRING)
             session._OAuth1ClientSession__create_signature_base_string = Mock(return_value=SIGNATURE_BASE_STRING)
-            actual_signature = session._OAuth1ClientSession__generate_signature(METHOD, URL, oauth_params, REQUEST_PARAMS)
-        
+            actual_signature = session._OAuth1ClientSession__generate_signature(
+                METHOD,
+                URL,
+                oauth_params,
+                REQUEST_PARAMS,
+            )
+
         self.assertEqual(actual_signature, SIGNATURE)
-    
+
     @patch.object(aiohttp, "ClientSession", Mock(spec=aiohttp.ClientSession))
     @patch("twitterpi.oauth1_client.b2a_base64")
     @patch("twitterpi.oauth1_client.HMAC")
-    async def test___generate_signature__verify_methods_called_with_expected_arguments(self, mock_hmac: Mock, mock_b64: Mock):
+    async def test___generate_signature__verify_methods_called_with_expected_arguments(
+            self, mock_hmac: Mock, mock_b64: Mock):
         """ Verify `__generate_signature` calls methods with expected arguments.
         """
 
@@ -137,10 +144,14 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
             session._OAuth1ClientSession__create_parameter_string = Mock(return_value=PARAMETER_STRING)
             session._OAuth1ClientSession__create_signature_base_string = Mock(return_value=SIGNATURE_BASE_STRING)
             session._OAuth1ClientSession__generate_signature(METHOD, URL, oauth_params, REQUEST_PARAMS)
-        
-            mock_hmac.assert_called_once_with(key=expected_signing_key.encode(), msg=SIGNATURE_BASE_STRING.encode(), digestmod=sha1)
+
+            mock_hmac.assert_called_once_with(
+                key=expected_signing_key.encode(),
+                msg=SIGNATURE_BASE_STRING.encode(),
+                digestmod=sha1,
+            )
             mock_b64.assert_called_once_with(mock_hmac_obj.digest(), newline=False)
-    
+
     @patch.object(aiohttp, "ClientSession", Mock(spec=aiohttp.ClientSession))
     async def test___create_parameter_string__verify_return_value(self):
         """ Verify `__create_parameter_string` returns expected parameter string.
@@ -156,7 +167,10 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
         }
 
         async with OAuth1ClientSession(**KEY_RING) as session:
-            actual_parameter_string = session._OAuth1ClientSession__create_parameter_string(oauth_params, REQUEST_PARAMS)
+            actual_parameter_string = session._OAuth1ClientSession__create_parameter_string(
+                oauth_params,
+                REQUEST_PARAMS,
+            )
 
         self.assertEqual(actual_parameter_string, PARAMETER_STRING)
 
@@ -166,7 +180,11 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
         """
 
         async with OAuth1ClientSession(**KEY_RING) as session:
-            actual_signature_base_string = session._OAuth1ClientSession__create_signature_base_string(METHOD, URL, PARAMETER_STRING)
+            actual_signature_base_string = session._OAuth1ClientSession__create_signature_base_string(
+                METHOD,
+                URL,
+                PARAMETER_STRING,
+            )
 
         self.assertEqual(actual_signature_base_string, SIGNATURE_BASE_STRING)
 
