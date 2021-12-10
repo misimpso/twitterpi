@@ -85,10 +85,11 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
         nonce = "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"
         timestamp = 1318622958
         mock_time.return_value = timestamp
-        async with OAuth1ClientSession(**KEY_RING) as session:
-            session._OAuth1ClientSession__generate_nonce = Mock(return_value=nonce)
-            session._OAuth1ClientSession__generate_signature = Mock(return_value=SIGNATURE)
-            actual_auth_header = session._OAuth1ClientSession__generate_auth_header(METHOD, URL, REQUEST_PARAMS)
+
+        session = OAuth1ClientSession(**KEY_RING)
+        session._OAuth1ClientSession__generate_nonce = Mock(return_value=nonce)
+        session._OAuth1ClientSession__generate_signature = Mock(return_value=SIGNATURE)
+        actual_auth_header = session._OAuth1ClientSession__generate_auth_header(METHOD, URL, REQUEST_PARAMS)
 
         self.assertEqual(actual_auth_header, AUTH_HEADER)
 
@@ -106,15 +107,15 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
             "oauth_version": "1.0",
         }
 
-        async with OAuth1ClientSession(**KEY_RING) as session:
-            session._OAuth1ClientSession__create_parameter_string = Mock(return_value=PARAMETER_STRING)
-            session._OAuth1ClientSession__create_signature_base_string = Mock(return_value=SIGNATURE_BASE_STRING)
-            actual_signature = session._OAuth1ClientSession__generate_signature(
-                METHOD,
-                URL,
-                oauth_params,
-                REQUEST_PARAMS,
-            )
+        session = OAuth1ClientSession(**KEY_RING)
+        session._OAuth1ClientSession__create_parameter_string = Mock(return_value=PARAMETER_STRING)
+        session._OAuth1ClientSession__create_signature_base_string = Mock(return_value=SIGNATURE_BASE_STRING)
+        actual_signature = session._OAuth1ClientSession__generate_signature(
+            METHOD,
+            URL,
+            oauth_params,
+            REQUEST_PARAMS,
+        )
 
         self.assertEqual(actual_signature, SIGNATURE)
 
@@ -140,17 +141,17 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
 
         expected_signing_key = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw&LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE"
 
-        async with OAuth1ClientSession(**KEY_RING) as session:
-            session._OAuth1ClientSession__create_parameter_string = Mock(return_value=PARAMETER_STRING)
-            session._OAuth1ClientSession__create_signature_base_string = Mock(return_value=SIGNATURE_BASE_STRING)
-            session._OAuth1ClientSession__generate_signature(METHOD, URL, oauth_params, REQUEST_PARAMS)
+        session = OAuth1ClientSession(**KEY_RING)
+        session._OAuth1ClientSession__create_parameter_string = Mock(return_value=PARAMETER_STRING)
+        session._OAuth1ClientSession__create_signature_base_string = Mock(return_value=SIGNATURE_BASE_STRING)
+        session._OAuth1ClientSession__generate_signature(METHOD, URL, oauth_params, REQUEST_PARAMS)
 
-            mock_hmac.assert_called_once_with(
-                key=expected_signing_key.encode(),
-                msg=SIGNATURE_BASE_STRING.encode(),
-                digestmod=sha1,
-            )
-            mock_b64.assert_called_once_with(mock_hmac_obj.digest(), newline=False)
+        mock_hmac.assert_called_once_with(
+            key=expected_signing_key.encode(),
+            msg=SIGNATURE_BASE_STRING.encode(),
+            digestmod=sha1,
+        )
+        mock_b64.assert_called_once_with(mock_hmac_obj.digest(), newline=False)
 
     @patch.object(aiohttp, "ClientSession", Mock(spec=aiohttp.ClientSession))
     async def test___create_parameter_string__verify_return_value(self):
@@ -166,11 +167,11 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
             "oauth_version": "1.0",
         }
 
-        async with OAuth1ClientSession(**KEY_RING) as session:
-            actual_parameter_string = session._OAuth1ClientSession__create_parameter_string(
-                oauth_params,
-                REQUEST_PARAMS,
-            )
+        session = OAuth1ClientSession(**KEY_RING)
+        actual_parameter_string = session._OAuth1ClientSession__create_parameter_string(
+            oauth_params,
+            REQUEST_PARAMS,
+        )
 
         self.assertEqual(actual_parameter_string, PARAMETER_STRING)
 
@@ -179,12 +180,12 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
         """ Verify `__create_signature_base_string` returns expected signature base string.
         """
 
-        async with OAuth1ClientSession(**KEY_RING) as session:
-            actual_signature_base_string = session._OAuth1ClientSession__create_signature_base_string(
-                METHOD,
-                URL,
-                PARAMETER_STRING,
-            )
+        session = OAuth1ClientSession(**KEY_RING)
+        actual_signature_base_string = session._OAuth1ClientSession__create_signature_base_string(
+            METHOD,
+            URL,
+            PARAMETER_STRING,
+        )
 
         self.assertEqual(actual_signature_base_string, SIGNATURE_BASE_STRING)
 
@@ -194,13 +195,13 @@ class OAuth1ClientTests(unittest.IsolatedAsyncioTestCase):
         """
 
         required_nonce_length = 32
-        async with OAuth1ClientSession(**KEY_RING) as session:
-            for _ in range(10):
-                nonce = session._OAuth1ClientSession__generate_nonce()
-                self.assertEqual(len(nonce), required_nonce_length)
-                for c in nonce:
-                    if c not in ALPHA_NUM:
-                        self.fail(f"Generated nonce is not strictly alpha-numeric. [{nonce}]")
+        session = OAuth1ClientSession(**KEY_RING)
+        for _ in range(10):
+            nonce = session._OAuth1ClientSession__generate_nonce()
+            self.assertEqual(len(nonce), required_nonce_length)
+            for c in nonce:
+                if c not in ALPHA_NUM:
+                    self.fail(f"Generated nonce is not strictly alpha-numeric. [{nonce}]")
 
 
 if __name__ == "__main__":
