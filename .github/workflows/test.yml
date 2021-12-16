@@ -20,11 +20,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install tox tox-gh-actions
-    - name: Test with tox
-      run: tox
-    - name: "Upload coverage to Codecov"
+        make init
+        . venv/bin/activate
+        make develop
+        make test
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2
-      with:
-        fail_ci_if_error: true
