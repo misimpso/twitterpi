@@ -1,4 +1,3 @@
-import aiohttp
 import random
 import string
 import urllib
