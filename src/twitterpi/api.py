@@ -20,7 +20,7 @@ URLS = {
     "get_user_tweets": f"{BASE_URL}statuses/user_timeline.json",
 }
 
-SEARCH_LIMITER = Limiter(requests_per_day=17280)
+SEARCH_LIMITER = Limiter(requests_per_day=10000)
 FAVORITE_LIMITER = Limiter(requests_per_day=1000)
 FOLLOW_LIMITER = Limiter(requests_per_day=400)
 RETWEET_LIMITER = Limiter(requests_per_day=1200)
