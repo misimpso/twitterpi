@@ -16,7 +16,7 @@ def read_file(filepath: Path) -> list[str]:
         list[str]: File contents as list of strings.
     """
 
-    contents = []
+    contents: list[str] = []
     with filepath.open("r") as f:
         contents = f.readlines()
     return contents

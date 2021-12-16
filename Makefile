@@ -27,7 +27,7 @@ clean:
 	rm -rf $(PROJ_BASE)/dist
 	rm -rf $(PROJ_BASE)/*.egg-info
 	rm -rf $(PROJ_BASE)/docs/_build/*
-	rm -f $(PROJ_BASE)/.coverage
+	rm -f $(PROJ_BASE)/*coverage*
 	rm -rf $(PROJ_BASE)/tests/htmlcov
 
 PHONY: sparkling
