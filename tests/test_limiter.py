@@ -40,18 +40,12 @@ class LimiterTests(unittest.TestCase):
                 ])
             )
 
-        print(mock_sleep.call_args_list)
-        print(call_times)
-
         # Make sure the sum of the time spent "sleeping" and the elapsed time between calls, is more
         # than `seconds_per_request`.
         for i, call in enumerate(mock_sleep.call_args_list):
             sleep_time: float = call[0][0]
             elapsed_call_time: float = (call_times[i + 1] - call_times[i])
-            print(sleep_time, elapsed_call_time, seconds_per_request)
             self.assertGreaterEqual((sleep_time + elapsed_call_time), seconds_per_request)
-
-        self.fail()
 
 
 if __name__ == "__main__":
