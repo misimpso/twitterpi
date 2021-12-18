@@ -17,7 +17,7 @@ ALPHA_NUM: list[str] = list(string.ascii_letters + string.digits)
 def prcnt_encd(s: str) -> str:
     """ Percent encode given string `s`.
 
-    Characters not in set `[A-Za-z0-9\-\.\_\~]` will be converted to their ascii hex value.
+    Characters not in set `[A-Za-z0-9-._~]` will be converted to their ascii hex value.
     https://developer.twitter.com/en/docs/authentication/oauth-1-0a/percent-encoding-parameters
 
     Args:
