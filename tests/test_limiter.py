@@ -29,7 +29,6 @@ class LimiterTests(unittest.TestCase):
 
             current_time = perf_counter()
             call_times.append(current_time)
-            await asyncio.sleep(5)
 
         mock_func = test_limiter.acquire(add_current_time)
 
