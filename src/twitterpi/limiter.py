@@ -47,6 +47,13 @@ class Limiter:
 
             current_time = perf_counter()
             sleep_time = self.seconds_per_request - (current_time - self._last_call_time)
+            print(
+                self.seconds_per_request,
+                current_time,
+                self._last_call_time,
+                (current_time - self._last_call_time),
+                sleep_time,
+            )
             if sleep_time > 0:
                 logger.info(f"Sleeping for [{sleep_time:.2f}] seconds.")
                 await sleep(sleep_time)
