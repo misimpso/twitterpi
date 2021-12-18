@@ -15,7 +15,7 @@ class Limiter:
         """
 
         self.requests_per_day = requests_per_day
-        self._last_call_time = 0
+        self._last_call_time: float = 0
         self.seconds_per_request = SECONDS_IN_A_DAY / requests_per_day
 
     def acquire(self, func: Coroutine) -> Callable:
@@ -47,14 +47,7 @@ class Limiter:
 
             current_time = perf_counter()
             sleep_time = self.seconds_per_request - (current_time - self._last_call_time)
-            print(
-                self.seconds_per_request,
-                current_time,
-                self._last_call_time,
-                (current_time - self._last_call_time),
-                sleep_time,
-            )
-            if sleep_time > 0:
+            if self._last_call_time != 0 and sleep_time > 0:
                 logger.info(f"Sleeping for [{sleep_time:.2f}] seconds.")
                 await sleep(sleep_time)
             self._last_call_time = perf_counter()
