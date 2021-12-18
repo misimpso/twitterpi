@@ -27,7 +27,9 @@ class LimiterTests(unittest.TestCase):
             """ Test method to get the time between calls
             """
 
-            call_times.append(perf_counter())
+            current_time = perf_counter()
+            call_times.append(current_time)
+            await asyncio.sleep(5)
 
         mock_func = test_limiter.acquire(add_current_time)
 
@@ -35,16 +37,22 @@ class LimiterTests(unittest.TestCase):
             loop.run_until_complete(
                 asyncio.gather(*[
                     mock_func(mock_logger)
-                    for _ in range(20)
+                    for _ in range(5)
                 ])
             )
+
+        print(mock_sleep.call_args_list)
+        print(call_times)
 
         # Make sure the sum of the time spent "sleeping" and the elapsed time between calls, is more
         # than `seconds_per_request`.
         for i, call in enumerate(mock_sleep.call_args_list):
             sleep_time: float = call[0][0]
             elapsed_call_time: float = (call_times[i + 1] - call_times[i])
+            print(sleep_time, elapsed_call_time, seconds_per_request)
             self.assertGreaterEqual((sleep_time + elapsed_call_time), seconds_per_request)
+
+        self.fail()
 
 
 if __name__ == "__main__":
