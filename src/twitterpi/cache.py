@@ -34,18 +34,20 @@ async def anext(gen: AsyncGenerator, default: Any = None) -> Any:
 
 
 class Cache:
-    def __init__(self, account_name: str):
+
+    def __init__(self, account_name: str, base_dir: Path = Path(__file__).parent):
         """ Constructor for Cache class.
 
         Create folders for `new_tweets` and `seen` tweets for given `account_name`.
 
         Args:
             account_name (str): Name of the account which cache dirs will be based off of.
+            base_dir (obj: Path, default = /path/to/site-packages/twitterpi): Cache base directory.
         """
 
-        base_dir: Path = Path(__file__).parent / "cache"
+        cache_dir: Path = base_dir / "cache"
         for folder in ("new_tweets", "seen"):
-            folder_path: Path = base_dir / account_name / folder
+            folder_path: Path = cache_dir / account_name / folder
             folder_path.mkdir(exist_ok=True, parents=True)
             setattr(self, f"{folder}_dir", AsyncPath(folder_path))
 
