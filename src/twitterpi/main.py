@@ -137,7 +137,8 @@ class TwitterBot:
             accounts (list[obj: Account]): List of instantiated Account objects.
         """
 
-        logger = logging.getLogger(__name__)
+        logger: logging.Logger = logging.getLogger(__name__)
+        logger = logging.LoggerAdapter(logger, extra={"account_name": "MAIN"})
 
         with closing(asyncio.get_event_loop()) as loop:
             tasks = asyncio.gather(*[account.start() for account in accounts])
