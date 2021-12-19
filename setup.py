@@ -11,7 +11,7 @@ def read_file(filepath: Path) -> list[str]:
 
     Args:
         filepath (obj: Path): Path to file.
-    
+
     Returns:
         list[str]: File contents as list of strings.
     """
@@ -28,3 +28,4 @@ setup(
         "test": read_file(REQUIREMENTS_DEV_FILE),
     },
 )
+
