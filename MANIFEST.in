@@ -1,1 +1,3 @@
 include src/twitterpi/conf/*.toml.sample
+include requirements.txt
+include requirements-dev.txt
