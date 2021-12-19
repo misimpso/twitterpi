@@ -30,7 +30,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
 
         with TemporaryDirectory() as temp_dir:
 
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             await cache.insert_new_tweets(TEST_TWEETS)
 
             tweet: Tweet = await cache.get_tweet()
@@ -42,7 +42,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
 
         with TemporaryDirectory() as temp_dir:
 
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             tweet = await cache.get_tweet()
             self.assertIsNone(tweet)
 
@@ -53,7 +53,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         with TemporaryDirectory() as temp_dir:
 
             tweet = SimpleNamespace(id=0)
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             exists: bool = await cache.check_tweet_seen(tweet)
             self.assertFalse(exists)
 
@@ -64,7 +64,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         with TemporaryDirectory() as temp_dir:
 
             tweet = SimpleNamespace(id=0)
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             tweet_path: AsyncPath = cache.seen_dir / f"{tweet.id}.json"
             await tweet_path.touch()
 
@@ -77,7 +77,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
 
         with TemporaryDirectory() as temp_dir:
 
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             await cache.insert_new_tweets(TEST_TWEETS)
 
             for tweet in TEST_TWEETS:
@@ -92,7 +92,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         with TemporaryDirectory() as temp_dir:
 
             tweet = SimpleNamespace(id=0)
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             await cache.insert_seen_tweet(tweet)
 
             tweet_path: AsyncPath = cache.seen_dir / f"{tweet.id}.json"
@@ -106,7 +106,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         with TemporaryDirectory() as temp_dir:
 
             tweet = SimpleNamespace(id=0)
-            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(temp_dir))
+            cache = Cache(account_name=TEST_ACCOUNT_NAME, base_dir=Path(str(temp_dir)))
             tweet_path: AsyncPath = cache.new_tweets_dir / f"{tweet.id}.json"
             await tweet_path.touch()
 
