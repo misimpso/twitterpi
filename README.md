@@ -1,4 +1,4 @@
-# twitter_pi
+# twitterpi
 Asynchronous, multi-user Twitter Giveaway Bot.
 
 [![Tests](https://github.com/misimpso/twitterpi/actions/workflows/test.yml/badge.svg)](https://github.com/misimpso/twitterpi/actions/workflows/test.yml)
@@ -17,11 +17,11 @@ Twitter Giveaway Bot
 optional arguments:
   -h, --help            show this help message and exit
   -c CREDS_PATH, --creds-path CREDS_PATH
-                        Path to account credentials file. (default: /path/to/python/site-packages/twitterpi/conf/credentials.toml)
+                        Path to account credentials file. (default: /path/to/site-packages/twitterpi/conf/credentials.toml)
   -s SETTINGS_PATH, --settings-path SETTINGS_PATH
-                        Path to account settings file. (default: /path/to/python/site-packages/twitterpi/conf/settings.toml)
+                        Path to account settings file. (default: /path/to/site-packages/twitterpi/conf/settings.toml)
   -o LOG_PATH, --log-path LOG_PATH
-                        Path to output log file. (default: /path/to/python/site-packages/twitterpi/logs/twitterpi.log)
+                        Path to output log file. (default: /path/to/site-packages/twitterpi/logs/twitterpi.log)
   -l {DEBUG,INFO,WARNING,ERROR,CRITICAL}, --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
                         Desired log level. (default: INFO)
 ```
@@ -29,7 +29,7 @@ optional arguments:
 ## Pre-requisites
 You'll need access to the [Twitter API](https://developer.twitter.com/en/products/twitter-api), and an environment running Python >3.6.
 
-Edit the `conf/credentials.toml.sample` with your API consumer / API keys, e.g:
+Edit the `/path/to/site-packages/twitterpi/conf/credentials.toml.sample` with your API consumer / API keys, e.g:
 ``` toml
 [YourAccountName]
 consumer_key = "XXXXXXXXXXXXXXXXXXXXXXXXX"
@@ -40,15 +40,3 @@ access_token_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 You can add multiple accounts to this credentials file. When populated, remove `.sample` suffix.
 
 Make sure you set the birthdate of your account or your follow requests will fail on certain age-restricted users (e.g. alcohol brands).
-
-## Process
-- For each account:
-    - Search for latest tweets matching criteria.
-        - Save returned tweets to memory for easy reference.
-        - Refresh tweets in memory if data is old.
-    - Interact with a lastest tweet at random.
-        - RT / Like / Follow, etc
-        - Move tweet id from todo dataset to done.
-        - Sleep for random period of time.
-
-Each request needs to be wrapped in a rate limit checker, and bearer token refresher.
