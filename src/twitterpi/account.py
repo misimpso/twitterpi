@@ -50,36 +50,6 @@ class Account:
 
             await sleep(5.0)
 
-    async def parse(self, tweet_text: str) -> Directive:
-        """ Parse given `tweet_text` and generate a `Directive` object from text contents.
-
-        Args:
-            tweet_text (str): String of tweet text.
-
-        Returns:
-            (obj: Directive)
-        """
-
-        directive = Directive()
-        tweet_text = tweet_text.lower()
-
-        for keyword in ("rt", "retweet", "re-tweet"):
-            if keyword in tweet_text:
-                directive.retweet = True
-                break
-
-        for keyword in ("favorite", "favourite", "fav", "like"):
-            if keyword in tweet_text:
-                directive.favorite = True
-                break
-
-        for keyword in ("flw", "follow"):
-            if keyword in tweet_text:
-                directive.follow = True
-                break
-
-        return directive
-
     async def interact(self, tweet: Tweet):
         """ Interact with given `tweet` based on its text contents.
 
@@ -88,7 +58,8 @@ class Account:
         """
 
         actions: list[tuple] = []
-        directive: Directive = await self.parse(tweet.text)
+        directive = Directive()
+        directive.parse_tweet(tweet.text)
 
         self.logger.info(f"Interacting with Tweet [https://twitter.com/{tweet.author.screen_name}/status/{tweet.id}]")
         for line in tweet.text.split("\n"):
