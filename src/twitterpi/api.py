@@ -1,6 +1,7 @@
 import logging
 
-from aiohttp.client_exceptions import ContentTypeError
+from aiohttp.client_exceptions import ClientResponseError, ContentTypeError
+from asyncio import sleep
 from twitterpi.dto import Tweet, User
 from twitterpi.limiter import Limiter
 from twitterpi.oauth1_client import OAuth1ClientSession
@@ -65,54 +66,64 @@ class Api:
             "q": search_term,
         }
 
+        tries = 0
+        max_retries = 5
         tweets: list[Tweet] = []
-        try:
-            async with self.oauth_session.get(URLS["search"], params=params, data=data) as response:
-                response_json = {}
-                try:
-                    response_json: dict = await response.json()
-                except ContentTypeError:
-                    response_text: str = await response.text()
-                    self.logger.error("ContentTypeError from response.")
-                    self.logger.error(response_text)
-                    self.logger.error(response)
+        while tries < max_retries:
+            try:
+                async with self.oauth_session.get(URLS["search"], params=params, data=data) as response:
+                    response_json = {}
+                    try:
+                        response_json: dict = await response.json()
+                    except ContentTypeError:
+                        response_text: str = await response.text()
+                        self.logger.error("ContentTypeError from response.")
+                        self.logger.error(response_text)
+                        self.logger.error(response)
 
-                # if response.status >= 400:
-                #     try:
-                #         response_json: dict = await response.json()
-                #         self.logger.error(response_json)
-                #     except ContentTypeError as e:
-                #         response_text: str = await response.text()
-                #         self.logger.exception("ContentTypeError from response.")
-                #         self.logger.exception(response_text)
-                #         raise e
+                    # if response.status >= 400:
+                    #     try:
+                    #         response_json: dict = await response.json()
+                    #         self.logger.error(response_json)
+                    #     except ContentTypeError as e:
+                    #         response_text: str = await response.text()
+                    #         self.logger.exception("ContentTypeError from response.")
+                    #         self.logger.exception(response_text)
+                    #         raise e
 
-                response.raise_for_status()
-                for tweet in response_json.get("statuses", []):
+                    response.raise_for_status()
+                    for tweet in response_json.get("statuses", []):
 
-                    if tweet["in_reply_to_status_id"] is not None:
-                        continue
-                    if tweet["in_reply_to_user_id"] is not None:
-                        continue
-                    if tweet["in_reply_to_screen_name"] is not None:
-                        continue
+                        if tweet["in_reply_to_status_id"] is not None:
+                            continue
+                        if tweet["in_reply_to_user_id"] is not None:
+                            continue
+                        if tweet["in_reply_to_screen_name"] is not None:
+                            continue
 
-                    author = User(id=tweet["user"]["id"], screen_name=tweet["user"]["screen_name"])
-                    mentions = [
-                        User(id=mention["id"], screen_name=mention["screen_name"])
-                        for mention in tweet["entities"]["user_mentions"]
-                    ]
-                    tweets.append(
-                        Tweet(
-                            id=tweet["id"],
-                            created_at=tweet["created_at"],
-                            text=tweet["full_text"],
-                            author=author,
-                            mentions=mentions,
-                        ))
-        except Exception as e:
-            self.logger.exception("Unexpected exception [get_tweets]")
-            raise e
+                        author = User(id=tweet["user"]["id"], screen_name=tweet["user"]["screen_name"])
+                        mentions = [
+                            User(id=mention["id"], screen_name=mention["screen_name"])
+                            for mention in tweet["entities"]["user_mentions"]
+                        ]
+                        tweets.append(
+                            Tweet(
+                                id=tweet["id"],
+                                created_at=tweet["created_at"],
+                                text=tweet["full_text"],
+                                author=author,
+                                mentions=mentions,
+                            ))
+                    break
+            except ClientResponseError as e:
+                if e.status != 400:
+                    raise e
+                tries += 1
+                self.logger.warn(f"Caught ClientResponseError, sleeping for [{1 << tries}] seconds.")
+                await sleep(1 << tries)
+            except Exception as e:
+                self.logger.exception("Unexpected exception [get_tweets]")
+                raise e
 
         self.logger.info(f"Received [{len(tweets)}] Tweets!")
         return tweets
@@ -135,12 +146,18 @@ class Api:
         self.logger.info(f"Favoriting tweet [TweetId: {tweet_id}] ...")
         try:
             async with self.oauth_session.post(URLS["favorite_tweet"], params=params) as response:
-                if response.status == 403:
+                if response.status in (401, 403):
                     response_json: dict = await response.json()
                     for error in response_json.get("errors", []):
+                        code = error.get("code", -1)
                         message = error.get("message", None)
-                        if message == "You have already favorited this status.":
-                            self.logger.info(message)
+                        # You have already favorited this status.
+                        if code == 139:
+                            self.logger.info(f"[{code}] {message}")
+                            return
+                        # You have been blocked from favoriting this user's tweets.
+                        if code == 136:
+                            self.logger.info(f"[{code}] {message}")
                             return
                     self.logger.info(response_json)
                 if response.status == 404:
@@ -176,11 +193,11 @@ class Api:
                         code = error.get("code", -1)
                         message = error.get("message", None)
                         if message == "Cannot find specified user.":
-                            self.logger.info(message)
+                            self.logger.info(f"[{code}] {message}")
                             return
                         # You've already requested to follow
                         if code == 160:
-                            self.logger.info(message)
+                            self.logger.info(f"[{code}] {message}")
                             return
                     self.logger.info(response_json)
                 response.raise_for_status()
@@ -203,12 +220,18 @@ class Api:
         self.logger.info(f"Retweeting [TweetId: {tweet_id}] ...")
         try:
             async with self.oauth_session.post(URLS["retweet"].format(tweet_id)) as response:
-                if response.status == 403:
+                if response.status in (401, 403):
                     response_json: dict = await response.json()
                     for error in response_json.get("errors", []):
+                        code = error.get("code", -1)
                         message = error.get("message", None)
-                        if message == "You have already retweeted this Tweet.":
-                            self.logger.info(message)
+                        # You have already retweeted this Tweet.
+                        if code == 327:
+                            self.logger.info(f"[{code}] {message}")
+                            return
+                        # You have been blocked from retweeting this user's tweets at their request.
+                        if code == 136:
+                            self.logger.info(f"[{code}] {message}")
                             return
                     self.logger.info(response_json)
                 if response.status == 404:
